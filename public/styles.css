@@ -1,0 +1,3770 @@
+/* MCP Session Memory Dashboard - shadcn/ui Polished Styles */
+/* Modern, clean design system with consistent spacing and typography */
+
+/* ============================================
+   CSS CUSTOM PROPERTIES (shadcn/ui Theme Variables)
+   ============================================ */
+:root {
+    /* shadcn/ui Color System - Slate/Zinc base with Blue accents */
+    --primary: 222.2 47.4% 11.2%;                    /* hsl(222.2, 47.4%, 11.2%) - Near-black primary */
+    --primary-foreground: 210 40% 98%;               /* hsl(210, 40%, 98%) - Almost white foreground */
+    --secondary: 210 40% 96%;                        /* hsl(210, 40%, 96%) - Very light gray secondary */
+    --secondary-foreground: 222.2 47.4% 11.2%;       /* Dark foreground on secondary */
+    --accent: 217.2 91.2% 59.8%;                     /* hsl(217.2, 91.2%, 59.8%) - Bright blue accent */
+    --muted: 210 40% 96%;                            /* hsl(210, 40%, 96%) - Muted background */
+    --muted-foreground: 215.4 16.3% 46.9%;           /* hsl(215.4, 16.3%, 46.9%) - Muted foreground */
+    --border: 214.3 31.8% 91.4%;                     /* hsl(214.3, 31.8%, 91.4%) - Subtle borders */
+    --background: 0 0% 100%;                         /* hsl(0, 0%, 100%) - Pure white background */
+    --foreground: 222.2 84% 4.9%;                    /* hsl(222.2, 84%, 4.9%) - Near-black foreground */
+    --card: 0 0% 100%;                               /* hsl(0, 0%, 100%) - Card background */
+    --card-foreground: 222.2 84% 4.9%;               /* Card text */
+    --destructive: 0 84.2% 60.2%;                    /* hsl(0, 84.2%, 60.2%) - Red for danger */
+    --destructive-foreground: 210 40% 98%;           /* Light text on destructive */
+    --success: 142.4 71.8% 29.2%;                    /* hsl(142.4, 71.8%, 29.2%) - Green success */
+    --success-foreground: 210 40% 98%;               /* Light text on success */
+
+    /* Brand Colors - shadcn defaults */
+    --primary-gradient: linear-gradient(135deg, hsl(222.2 47.4% 11.2%) 0%, hsl(217.2 91.2% 59.8%) 100%);
+
+    /* Semantic Colors */
+    --warning: 38.6 92.1% 50.2%;                     /* hsl(38.6, 92.1%, 50.2%) - Amber warning */
+    --warning-light: rgba(217, 119, 6, 0.08);
+    --danger: 0 84.2% 60.2%;                         /* Alias for destructive */
+    --danger-light: rgba(239, 68, 68, 0.08);
+    --info: 217.2 91.2% 59.8%;                       /* Alias for accent */
+    --info-light: rgba(59, 130, 246, 0.08);
+
+    /* Light Theme */
+    --bg-primary: hsl(0, 0%, 100%);
+    --bg-secondary: hsl(210, 40%, 96%);
+    --bg-tertiary: hsl(210, 40%, 96%);
+    --bg-accent: hsl(214.3, 31.8%, 91.4%);
+    --bg-overlay: rgba(255, 255, 255, 0.97);
+
+    --text-primary: hsl(222.2, 84%, 4.9%);
+    --text-secondary: hsl(215.4, 16.3%, 40%);
+    --text-tertiary: hsl(215.4, 16.3%, 46.9%);
+    --text-muted: hsl(215.4, 16.3%, 61.5%);
+
+    --border-color: hsl(214.3, 31.8%, 91.4%);
+    --border-color-light: hsl(210, 40%, 96%);
+    --border-color-dark: hsl(214.3, 31.8%, 85%);
+
+    /* Typography - System stack for optimal rendering */
+    --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+
+    /* Spacing System - 4/8px grid base (matches Tailwind) */
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-10: 2.5rem;
+    --spacing-12: 3rem;
+    --spacing-16: 4rem;
+
+    /* Animations - Material Design timing functions */
+    --transition-fast: 100ms cubic-bezier(0.4, 0, 0.2, 1);      /* Standard easing */
+    --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);    /* General purpose */
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);      /* Entrance/exit */
+
+    /* Border Radius - Consistent rounded corners */
+    --radius-sm: 0.375rem;      /* 6px - subtle */
+    --radius-md: 0.5rem;        /* 8px - standard */
+    --radius-lg: 0.75rem;       /* 12px - components */
+    --radius-xl: 1rem;          /* 16px - cards */
+    --radius-2xl: 1.25rem;      /* 20px - large panels */
+    --radius-full: 9999px;      /* 100% - pills/circles */
+
+    /* Shadows - Elevation system (shadcn defaults) */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 4px 8px 0 rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 8px 16px 0 rgba(0, 0, 0, 0.10);
+    --shadow-2xl: 0 12px 24px 0 rgba(0, 0, 0, 0.12);
+
+    /* Z-index Stack */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+}
+
+/* Dark Theme - Slate palette optimized for dark backgrounds */
+/* Dark theme - explicit data-theme attribute */
+[data-theme="dark"] {
+    --primary: 210 40% 98%;                          /* Light foreground in dark mode */
+    --primary-foreground: 222.2 47.4% 11.2%;         /* Dark on light in dark mode */
+    --secondary: 217.2 32.6% 17.5%;                  /* hsl(217.2, 32.6%, 17.5%) - Dark secondary */
+    --secondary-foreground: 210 40% 98%;             /* Light text on dark secondary */
+    --border: 217.2 32.6% 17.5%;                     /* Darker borders */
+    --background: 222.2 84% 4.9%;                    /* Near-black background */
+    --foreground: 210 40% 98%;                       /* Almost white foreground */
+    --card: 217.2 32.6% 17.5%;                       /* Dark card */
+    --card-foreground: 210 40% 98%;                  /* Light text on dark card */
+
+    /* Dark theme backgrounds */
+    --bg-primary: hsl(222.2, 84%, 4.9%);
+    --bg-secondary: hsl(217.2, 32.6%, 17.5%);
+    --bg-tertiary: hsl(215.4, 27.9%, 16.9%);
+    --bg-accent: hsl(215.4, 27.9%, 23.5%);
+    --bg-overlay: rgba(22, 23, 37, 0.95);
+
+    --text-primary: hsl(210, 40%, 98%);
+    --text-secondary: hsl(215.4, 16.3%, 66.9%);
+    --text-tertiary: hsl(215.4, 16.3%, 52.4%);
+    --text-muted: hsl(215.4, 16.3%, 40%);
+
+    --border-color: hsl(217.2, 32.6%, 17.5%);
+    --border-color-light: hsl(215.4, 27.9%, 23.5%);
+    --border-color-dark: hsl(215.4, 16.3%, 40%);
+
+    /* Dark shadows - more pronounced */
+    --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    --shadow-2xl: 0 25px 50% -12px rgba(0, 0, 0, 0.6);
+}
+
+/* System preference dark mode - fallback when data-theme not set */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --primary: 210 40% 98%;
+        --primary-foreground: 222.2 47.4% 11.2%;
+        --secondary: 217.2 32.6% 17.5%;
+        --secondary-foreground: 210 40% 98%;
+        --border: 217.2 32.6% 17.5%;
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+        --card: 217.2 32.6% 17.5%;
+        --card-foreground: 210 40% 98%;
+        --bg-primary: hsl(222.2, 84%, 4.9%);
+        --bg-secondary: hsl(217.2, 32.6%, 17.5%);
+        --bg-tertiary: hsl(215.4, 27.9%, 16.9%);
+        --bg-accent: hsl(215.4, 27.9%, 23.5%);
+        --text-primary: hsl(210, 40%, 98%);
+        --text-secondary: hsl(215.4, 16.3%, 66.9%);
+        --text-tertiary: hsl(215.4, 16.3%, 52.4%);
+        --text-muted: hsl(215.4, 16.3%, 40%);
+        --border-color: hsl(217.2, 32.6%, 17.5%);
+        --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+        --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY UTILITIES
+   ============================================ */
+
+/* Screen reader only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Global CSS Reset - Essential for consistent sizing */
+html, body, *,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* Skip link for keyboard navigation */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary);
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 500;
+    z-index: var(--z-tooltip);
+    transition: var(--transition-fast);
+    border: 2px solid transparent;
+}
+
+.skip-link:focus {
+    top: 6px;
+    outline: none;
+    border-color: white;
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* ============================================
+   CUSTOM ANIMATIONS
+   ============================================ */
+
+/* Spinner animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary);
+    border-radius: var(--radius-full);
+    animation: spin 1s linear infinite;
+}
+
+/* Animate-spin utility for refresh buttons */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   CUSTOM COMPONENTS
+   ============================================ */
+
+/* Emoji font rendering */
+.emoji {
+    font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+    font-variant-emoji: unicode;
+}
+
+/* Theme transition helper - smoother transitions */
+body.theme-transition-enabled * {
+    transition: background-color 0.3s ease-in-out,
+                color 0.3s ease-in-out,
+                border-color 0.3s ease-in-out,
+                box-shadow 0.3s ease-in-out,
+                transform 0.3s ease-in-out,
+                opacity 0.3s ease-in-out !important;
+}
+
+/* Header gradient background with pattern - dynamic for dark/light mode */
+header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+    opacity: 0.1;
+    z-index: -1;
+}
+
+.dark header::before {
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+    opacity: 0.2;
+}
+
+/* Button ripple effect animation */
+@keyframes ripple {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(5);
+        opacity: 0;
+    }
+}
+
+.ripple-effect {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.4);
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    pointer-events: none;
+    transform-origin: center;
+    animation: ripple 0.6s ease-out;
+}
+
+.dark .ripple-effect {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced theme toggle button styles */
+.theme-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.theme-btn[data-active="true"] {
+    font-weight: 600;
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary);
+}
+
+/* Card grid layout for data section card views */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+@media (max-width: 640px) {
+    .card-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Section heading visual accent — left border marker */
+section[aria-labelledby] > div > div > div > h2,
+section[aria-labelledby] > div > div > h2 {
+    position: relative;
+    padding-left: 0.75rem;
+}
+
+section[aria-labelledby] > div > div > div > h2::before,
+section[aria-labelledby] > div > div > h2::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 1.1em;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #3b82f6, #6366f1);
+}
+
+/* Badge styles for different data types */
+.badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300;
+}
+
+/* Language-specific badge colors */
+.badge.language-python {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300;
+}
+
+.badge.language-typescript {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300;
+}
+
+.badge.language-javascript {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300;
+}
+
+.badge.language-go {
+    @apply bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-300;
+}
+
+.badge.language-kotlin {
+    @apply bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300;
+}
+
+.badge.language-unknown {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-300;
+}
+
+/* Role-specific badge colors */
+.badge.role-user {
+    @apply bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300;
+}
+
+.badge.role-assistant {
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300;
+}
+
+.badge.role-system {
+    @apply bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300;
+}
+
+.badge.role-unknown {
+    @apply bg-gray-100 text-gray-800 dark:bg-gray-900/50 dark:text-gray-300;
+}
+
+/* Table row hover effects */
+tbody tr {
+    @apply transition-colors duration-150;
+}
+
+tbody tr:hover {
+    @apply bg-gray-50 dark:bg-gray-700/50;
+}
+
+/* Loading and error states */
+.loading {
+    @apply text-center py-8 italic;
+}
+
+.no-data {
+    @apply text-center py-8 text-gray-500 dark:text-gray-400;
+}
+
+.error {
+    @apply text-center py-8 text-red-500 dark:text-red-400;
+}
+
+/* Modal content styling */
+.modal-detail {
+    @apply space-y-4;
+}
+
+.modal-detail p {
+    @apply flex items-center gap-2;
+}
+
+.modal-detail pre {
+    @apply bg-gray-50 dark:bg-gray-800 p-3 rounded-lg text-sm overflow-x-auto border border-gray-200 dark:border-gray-700;
+    @apply font-mono;
+}
+
+.modal-detail strong {
+    @apply font-semibold text-gray-900 dark:text-gray-100 min-w-[120px];
+}
+
+/* Actions cell styling */
+.actions-cell {
+    @apply text-center;
+}
+
+.actions-cell button {
+    @apply p-1 rounded transition-colors duration-150;
+}
+
+/* Dark mode specific enhancements */
+.dark .bg-card {
+    background-color: rgba(30, 41, 59, 0.7) !important;
+}
+
+.dark .border-border {
+    border-color: rgba(51, 65, 85, 0.5) !important;
+}
+
+.dark .shadow-lg {
+    box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Cool gradient background effect for dark mode */
+.dark body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 35%, rgba(29, 78, 216, 0.15), transparent 20%),
+        radial-gradient(circle at 75% 44%, rgba(124, 58, 237, 0.1), transparent 25%),
+        radial-gradient(circle at 5% 85%, rgba(6, 182, 212, 0.1), transparent 15%);
+    z-index: -2;
+    pointer-events: none;
+}
+
+/* Subtle noise texture for dark mode */
+.dark body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    z-index: -1;
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* Frosted glass effect for cards in dark mode */
+.dark .card, 
+.dark .rounded-2xl {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* ============================================
+    TABLE STYLING IMPROVEMENTS
+    ============================================ */
+
+/* Table container wrapper - unified visual component */
+.table-wrapper {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    border: 1px solid var(--border-color-light);
+    background: var(--bg-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.dark .table-wrapper {
+    border-color: var(--border-color-dark);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Remove padding/margin from table container within wrapper */
+.table-wrapper > .rounded-xl,
+.table-wrapper > .overflow-hidden {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    flex: 1;
+}
+
+/* Pagination styling within table wrapper */
+.table-wrapper > #contexts-pagination,
+.table-wrapper > #preferences-pagination,
+.table-wrapper > #conventions-pagination,
+.table-wrapper > #interactions-pagination,
+.table-wrapper > #tasks-pagination {
+    margin-top: 0 !important;
+    margin: 0;
+    border-radius: 0;
+    border-top: 1px solid var(--border-color-light);
+    background: var(--bg-primary);
+    padding: 1rem;
+}
+
+.dark .table-wrapper > #contexts-pagination,
+.dark .table-wrapper > #preferences-pagination,
+.dark .table-wrapper > #conventions-pagination,
+.dark .table-wrapper > #interactions-pagination,
+.dark .table-wrapper > #tasks-pagination {
+    border-top-color: var(--border-color-dark);
+    background: var(--bg-primary);
+}
+
+/* Ensure last pagination div gets bottom radius */
+.table-wrapper > #contexts-pagination:last-child,
+.table-wrapper > #preferences-pagination:last-child,
+.table-wrapper > #conventions-pagination:last-child,
+.table-wrapper > #interactions-pagination:last-child,
+.table-wrapper > #tasks-pagination:last-child {
+    border-radius: 0 0 0.75rem 0.75rem;
+}
+
+/* Fallback sibling selectors for backwards compatibility */
+.table-wrapper + #contexts-pagination,
+.table-wrapper + #preferences-pagination,
+.table-wrapper + #conventions-pagination,
+.table-wrapper + #interactions-pagination,
+.table-wrapper + #tasks-pagination {
+    margin-top: 0 !important;
+    border-radius: 0 0 0.75rem 0.75rem;
+    border-top: 1px solid var(--border-color-light);
+}
+
+.dark .table-wrapper + #contexts-pagination,
+.dark .table-wrapper + #preferences-pagination,
+.dark .table-wrapper + #conventions-pagination,
+.dark .table-wrapper + #interactions-pagination,
+.dark .table-wrapper + #tasks-pagination {
+    border-top-color: var(--border-color-dark);
+}
+
+/* ============================================
+    PAGINATION BUTTON ACCESSIBILITY
+    ============================================ */
+
+/* Pagination button base styling - 44x44px minimum touch targets */
+#contexts-pagination button,
+#preferences-pagination button,
+#conventions-pagination button,
+#interactions-pagination button,
+#tasks-pagination button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+/* Focus state - WCAG 2.1 AA minimum 3px focus indicator */
+#contexts-pagination button:focus,
+#preferences-pagination button:focus,
+#conventions-pagination button:focus,
+#interactions-pagination button:focus,
+#tasks-pagination button:focus {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+    box-shadow: inset 0 0 0 2px var(--bg-primary);
+}
+
+/* Hover state for mouse users */
+#contexts-pagination button:hover:not(:disabled),
+#preferences-pagination button:hover:not(:disabled),
+#conventions-pagination button:hover:not(:disabled),
+#interactions-pagination button:hover:not(:disabled),
+#tasks-pagination button:hover:not(:disabled) {
+    background-color: rgba(59, 130, 246, 0.05);
+    transform: translateY(-1px);
+}
+
+/* Active/pressed state */
+#contexts-pagination button:active:not(:disabled),
+#preferences-pagination button:active:not(:disabled),
+#conventions-pagination button:active:not(:disabled),
+#interactions-pagination button:active:not(:disabled),
+#tasks-pagination button:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Disabled state - clearly indicate unavailability */
+#contexts-pagination button:disabled,
+#preferences-pagination button:disabled,
+#conventions-pagination button:disabled,
+#interactions-pagination button:disabled,
+#tasks-pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Dark mode button styling */
+.dark #contexts-pagination button,
+.dark #preferences-pagination button,
+.dark #conventions-pagination button,
+.dark #interactions-pagination button,
+.dark #tasks-pagination button {
+    color: var(--text-primary);
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color-dark);
+}
+
+.dark #contexts-pagination button:hover:not(:disabled),
+.dark #preferences-pagination button:hover:not(:disabled),
+.dark #conventions-pagination button:hover:not(:disabled),
+.dark #interactions-pagination button:hover:not(:disabled),
+.dark #tasks-pagination button:hover:not(:disabled) {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.dark .table-wrapper + #contexts-pagination,
+.dark .table-wrapper + #preferences-pagination,
+.dark .table-wrapper + #conventions-pagination,
+.dark .table-wrapper + #interactions-pagination,
+.dark .table-wrapper + #tasks-pagination {
+    border-top-color: var(--border-color-dark);
+}
+
+/* Table container - smooth scrolling */
+.overflow-x-auto {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+/* Table base styling */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+/* Table header - sticky and enhanced */
+thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--bg-primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    font-size: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--border-color);
+    transition: background-color 0.2s ease, border-color 0.2s ease,
+                transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.15s ease;
+    cursor: default;
+    user-select: none;
+    position: relative;
+}
+
+.dark thead th {
+    background-color: var(--bg-secondary);
+    border-bottom-color: var(--border-color-light);
+    color: var(--text-primary);
+}
+
+/* Sortable header states */
+thead th.sortable {
+    cursor: pointer;
+}
+
+thead th.sortable:hover {
+    background-color: rgba(59, 130, 246, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.dark thead th.sortable:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+}
+
+thead th.sortable:active {
+    transform: translateY(0px) scale(0.98);
+    transition: transform 0.08s ease;
+}
+
+/* Sort indicator animations */
+thead th.sortable::after {
+    content: '⇅';
+    margin-left: 0.5rem;
+    opacity: 0.3;
+    font-size: 0.875rem;
+    transition: opacity 0.2s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: inline-block;
+}
+
+thead th.sortable:hover::after {
+    opacity: 0.6;
+    transform: translateY(-1px);
+}
+
+thead th.sort-asc::after {
+    content: '↑';
+    opacity: 1;
+    color: #3b82f6;
+    animation: sortArrowBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+thead th.sort-desc::after {
+    content: '↓';
+    opacity: 1;
+    color: #3b82f6;
+    animation: sortArrowBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sortArrowBounce {
+    0% { transform: scale(0.8) translateY(0); }
+    50% { transform: scale(1.3) translateY(-2px); }
+    100% { transform: scale(1) translateY(0); }
+}
+
+/* Table row transitions - standardized */
+tbody tr {
+    transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
+    position: relative;
+}
+
+/* Row selection states */
+tbody tr.selected {
+    background-color: rgba(59, 130, 246, 0.12) !important;
+    box-shadow: inset 4px 0 0 #3b82f6, 0 1px 3px rgba(59, 130, 246, 0.1);
+}
+
+.dark tbody tr.selected {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    box-shadow: inset 4px 0 0 #60a5fa, 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+tbody tr.selected::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+}
+
+/* Multi-select checkbox styling */
+tbody tr .row-checkbox {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+tbody tr:hover .row-checkbox,
+tbody tr.selected .row-checkbox {
+    opacity: 1;
+}
+
+/* Row hover effects - light mode */
+tbody tr:hover {
+    background-color: rgba(59, 130, 246, 0.04);
+    box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.5);
+}
+
+/* Row hover effects - dark mode */
+.dark tbody tr:hover {
+    background-color: rgba(59, 130, 246, 0.08);
+    box-shadow: inset 3px 0 0 rgba(59, 130, 246, 0.6);
+}
+
+/* Zebra striping - light mode */
+tbody tr:nth-child(even) {
+    background-color: rgba(249, 250, 251, 0.4);
+}
+
+/* Zebra striping - dark mode */
+.dark tbody tr:nth-child(even) {
+    background-color: rgba(30, 41, 59, 0.25);
+}
+
+/* Maintain hover effect over zebra striping - light mode */
+tbody tr:nth-child(even):hover {
+    background-color: rgba(59, 130, 246, 0.06);
+}
+
+/* Maintain hover effect over zebra striping - dark mode */
+.dark tbody tr:nth-child(even):hover {
+    background-color: rgba(59, 130, 246, 0.12);
+}
+
+/* Table cell styling */
+tbody td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid var(--border-color-light);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    vertical-align: middle;
+    color: #374151;
+}
+
+.dark tbody td {
+    border-bottom-color: rgba(51, 65, 85, 0.3);
+    color: #e5e7eb;
+}
+
+/* Remove border from last row */
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Code blocks in tables - enhanced */
+tbody code {
+    background-color: rgba(229, 231, 235, 0.6);
+    border: 1px solid rgba(209, 213, 219, 0.5);
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: #1f2937;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dark tbody code {
+    background-color: rgba(30, 41, 59, 0.6);
+    border-color: rgba(71, 85, 105, 0.4);
+    color: #93c5fd;
+}
+
+tbody code:hover {
+    background-color: rgba(229, 231, 235, 1);
+    border-color: rgba(209, 213, 219, 0.8);
+}
+
+.dark tbody code:hover {
+    background-color: rgba(30, 41, 59, 0.9);
+    border-color: rgba(71, 85, 105, 0.7);
+}
+
+/* Pre blocks in tables */
+tbody pre {
+    background-color: rgba(229, 231, 235, 0.5);
+    border: 1px solid rgba(209, 213, 219, 0.5);
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    margin: 0.25rem 0;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    overflow-x: auto;
+    max-width: 400px;
+}
+
+.dark tbody pre {
+    background-color: rgba(30, 41, 59, 0.6);
+    border-color: rgba(71, 85, 105, 0.3);
+}
+
+/* Badge styling in tables */
+tbody .badge,
+tbody span[class*="bg-"] {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+tbody .badge:hover,
+tbody span[class*="bg-"]:hover {
+    transform: scale(1.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark tbody .badge,
+.dark tbody span[class*="bg-"] {
+    background-color: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+}
+
+/* Text truncation for long content */
+.truncate-cell {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.truncate-cell:hover {
+    overflow: visible;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Action buttons in table cells */
+tbody button,
+tbody a.button {
+    transition: transform 0.15s ease, opacity 0.15s ease,
+                box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+tbody button::before,
+tbody a.button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+tbody button:active::before,
+tbody a.button:active::before {
+    width: 200px;
+    height: 200px;
+    opacity: 1;
+    transition: width 0s, height 0s, opacity 0.3s ease;
+}
+
+tbody button:hover,
+tbody a.button:hover {
+    transform: scale(1.05) translateY(-1px);
+    opacity: 0.9;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+tbody button:active,
+tbody a.button:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* Delete button styling - red/danger variant */
+.delete-btn {
+    color: #ef4444 !important;
+    opacity: 0.8;
+    position: relative;
+    overflow: hidden;
+}
+
+.delete-btn:hover {
+    opacity: 1 !important;
+    color: #dc2626 !important;
+    background-color: rgba(239, 68, 68, 0.08) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.dark .delete-btn:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+/* Edit button styling - blue variant */
+.edit-btn {
+    color: #3b82f6 !important;
+    opacity: 0.8;
+    position: relative;
+    overflow: hidden;
+}
+
+.edit-btn:hover {
+    opacity: 1 !important;
+    color: #2563eb !important;
+    background-color: rgba(59, 130, 246, 0.08) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.dark .edit-btn:hover {
+    background-color: rgba(59, 130, 246, 0.15) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* View button styling - gray variant */
+.view-btn {
+    color: #6b7280 !important;
+    opacity: 0.8;
+    position: relative;
+    overflow: hidden;
+}
+
+.view-btn:hover {
+    opacity: 1 !important;
+    color: #4b5563 !important;
+    background-color: rgba(107, 114, 128, 0.08) !important;
+    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.1),
+                0 4px 8px rgba(107, 114, 128, 0.15);
+}
+
+.dark .view-btn:hover {
+    color: #9ca3af !important;
+    background-color: rgba(107, 114, 128, 0.15) !important;
+    box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.2),
+                0 4px 8px rgba(107, 114, 128, 0.25);
+}
+
+/* Column resize indicators */
+thead th.resizable {
+    position: relative;
+}
+
+thead th.resizable::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 2px;
+    background: transparent;
+    cursor: col-resize;
+    transition: background-color 0.2s ease, width 0.2s ease;
+}
+
+thead th.resizable:hover::after {
+    background: linear-gradient(180deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+    width: 3px;
+}
+
+.dark thead th.resizable:hover::after {
+    background: linear-gradient(180deg, transparent, rgba(96, 165, 250, 0.6), transparent);
+}
+
+thead th.resizing {
+    user-select: none;
+    cursor: col-resize;
+}
+
+thead th.resizing::after {
+    background: linear-gradient(180deg, transparent, #3b82f6, transparent);
+    width: 3px;
+}
+
+/* Responsive table improvements */
+@media (max-width: 768px) {
+    thead th {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.6875rem;
+    }
+    
+    tbody td {
+        padding: 0.75rem;
+        font-size: 0.8125rem;
+    }
+    
+    .truncate-cell {
+        max-width: 200px;
+    }
+}
+
+/* Enhanced badge styling for dark mode */
+.dark .badge {
+    background-color: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #93c5fd;
+}
+
+/* ============================================
+    CHART.JS CANVAS ENHANCEMENTS
+    ============================================ */
+
+/* Chart container with smooth entrance */
+#stats-chart-view {
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#stats-chart-view[data-active="true"] {
+    animation: chartViewFadeIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes chartViewFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Chart canvas hover effects */
+#stats-chart {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+#stats-chart:hover {
+    transform: scale(1.02);
+    filter: drop-shadow(0 8px 16px rgba(59, 130, 246, 0.15));
+}
+
+.dark #stats-chart:hover {
+    filter: drop-shadow(0 8px 20px rgba(59, 130, 246, 0.25));
+}
+
+/* Chart loading shimmer */
+#stats-chart.loading {
+    opacity: 0.6;
+}
+
+/* Chart legend items (custom legend outside canvas) */
+.chart-legend-item {
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+    position: relative;
+}
+
+.chart-legend-item:hover {
+    transform: translateX(4px);
+}
+
+.chart-legend-item:hover::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, transparent, currentColor, transparent);
+    border-radius: 2px;
+    opacity: 0.6;
+}
+
+.chart-legend-item.disabled {
+    opacity: 0.4;
+    text-decoration: line-through;
+    transition: opacity 0.2s ease;
+}
+
+/* Chart color indicators with pulse */
+.chart-legend-item .color-indicator {
+    transition: transform 0.2s ease;
+}
+
+.chart-legend-item:hover .color-indicator {
+    transform: scale(1.2);
+}
+
+/* Chart data update animation */
+#stats-chart.updating {
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+}
+
+/* Chart segment hover glow (requires custom Chart.js plugin) */
+.chart-segment-hover {
+    filter: drop-shadow(0 0 12px currentColor);
+    transition: filter 0.2s ease;
+}
+
+/* ============================================
+    MODAL ENHANCEMENTS (Polished & Refined)
+    ============================================ */
+
+/* Modal overlay - cinematic backdrop with depth */
+#modal-overlay,
+#add-modal-overlay,
+#edit-preference-modal {
+    opacity: 0;
+    visibility: hidden;
+    -webkit-backdrop-filter: blur(0px) saturate(1) brightness(1);
+    backdrop-filter: blur(0px) saturate(1) brightness(1);
+    transition: opacity 0.4s cubic-bezier(0.19, 1, 0.22, 1), 
+                visibility 0.4s cubic-bezier(0.19, 1, 0.22, 1),
+                backdrop-filter 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0) 0%, 
+        rgba(30, 41, 59, 0) 100%);
+    will-change: opacity, backdrop-filter;
+}
+
+#modal-overlay.active,
+#add-modal-overlay.active,
+#edit-preference-modal.active {
+    opacity: 1;
+    visibility: visible;
+    -webkit-backdrop-filter: blur(16px) saturate(1.2) brightness(0.85);
+    backdrop-filter: blur(16px) saturate(1.2) brightness(0.85);
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.4) 0%, 
+        rgba(30, 41, 59, 0.6) 100%);
+}
+
+.dark #modal-overlay.active,
+.dark #add-modal-overlay.active,
+.dark #edit-preference-modal.active {
+    -webkit-backdrop-filter: blur(20px) saturate(1.3) brightness(0.7);
+    backdrop-filter: blur(20px) saturate(1.3) brightness(0.7);
+    background: linear-gradient(135deg, 
+        rgba(0, 0, 0, 0.5) 0%, 
+        rgba(15, 23, 42, 0.7) 100%);
+}
+
+/* Modal container - enhanced animation with depth and micro-interactions */
+#modal-content,
+#add-modal-content,
+#edit-preference-content {
+    transform: scale(0.92) translateY(30px) rotateX(2deg) perspective(1000px);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                opacity 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                filter 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.12),
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+                0 0 20px rgba(59, 130, 246, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(2px) saturate(1.1);
+    filter: brightness(0.98) saturate(0.95);
+    border-radius: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Modal shimmer effect on open */
+#modal-content::before,
+#add-modal-content::before,
+#edit-preference-content::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.1) 50%,
+        transparent 70%
+    );
+    transform: rotate(45deg) translateX(-100%);
+    transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: none;
+    z-index: 1;
+}
+
+#modal-overlay.active #modal-content::before,
+#add-modal-overlay.active #add-modal-content::before,
+#edit-preference-modal.active #edit-preference-content::before {
+    transform: rotate(45deg) translateX(100%);
+}
+
+#modal-overlay.active #modal-content,
+#add-modal-overlay.active #add-modal-content,
+#edit-preference-modal.active #edit-preference-content {
+    transform: scale(1) translateY(0) rotateX(0deg) perspective(1000px);
+    opacity: 1;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2),
+                0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+                0 0 25px rgba(59, 130, 246, 0.08),
+                0 0 50px rgba(147, 51, 234, 0.04);
+    filter: brightness(1) saturate(1);
+}
+
+.dark #modal-content,
+.dark #add-modal-content,
+.dark #edit-preference-content {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4),
+                0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+                0 0 0 0.5px rgba(0, 0, 0, 0.2);
+}
+
+.dark #modal-overlay.active #modal-content,
+.dark #add-modal-overlay.active #add-modal-content,
+.dark #edit-preference-modal.active #edit-preference-content {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+                0 0 30px rgba(59, 130, 246, 0.2),
+                0 0 60px rgba(147, 51, 234, 0.1);
+}
+
+/* Modal header - enhanced with glassmorphism and improved alignment */
+#modal-content > div:first-child,
+#add-modal-content > div:first-child,
+#edit-preference-content > div:first-child {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.95) 0%, 
+        rgba(248, 250, 252, 0.95) 100%);
+    backdrop-filter: blur(10px) saturate(1.8);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 1rem 1rem 0 0;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) inset;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 76px;
+    box-sizing: border-box;
+    gap: 1rem;
+}
+
+/* Modal header title container - improved alignment */
+#modal-content > div:first-child > div:first-child,
+#add-modal-content > div:first-child > div:first-child,
+#edit-preference-content > div:first-child > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    flex: 1;
+    min-height: 44px;
+    min-width: 0;
+}
+
+/* Modal header titles - consistent sizing */
+#modal-title,
+#add-modal-title,
+#edit-preference-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.3;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    height: auto;
+    min-height: 44px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Modal header close button - consistent sizing and alignment */
+#modal-close,
+#add-modal-overlay button[onclick*="closeAddModal"],
+#edit-preference-close {
+    flex-shrink: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+}
+
+#modal-icon::before,
+#add-modal-content > div:first-child > div:first-child::before,
+#edit-preference-content > div:first-child > div:first-child::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+#modal-content:hover #modal-icon::before,
+#add-modal-content:hover > div:first-child > div:first-child::before,
+#edit-preference-content:hover > div:first-child > div:first-child::before {
+    transform: translateX(100%);
+}
+
+/* Modal body - enhanced scrolling and spacing */
+#modal-body,
+#add-session-form,
+.modal-body,
+#edit-preference-form {
+    max-height: calc(70vh - 140px);
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+#modal-body::-webkit-scrollbar,
+#add-session-form::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar,
+#edit-preference-form::-webkit-scrollbar {
+    width: 6px;
+}
+
+#modal-body::-webkit-scrollbar-track,
+#add-session-form::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track,
+#edit-preference-form::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+#modal-body::-webkit-scrollbar-thumb,
+#add-session-form::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb,
+#edit-preference-form::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, rgba(156, 163, 175, 0.6), rgba(107, 114, 128, 0.6));
+    border-radius: 4px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+#modal-body::-webkit-scrollbar-thumb:hover,
+#add-session-form::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover,
+#edit-preference-form::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.8), rgba(75, 85, 99, 0.8));
+}
+
+.dark #modal-body::-webkit-scrollbar-track,
+.dark #add-session-form::-webkit-scrollbar-track,
+.dark .modal-body::-webkit-scrollbar-track,
+.dark #edit-preference-form::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dark #modal-body::-webkit-scrollbar-thumb,
+.dark #add-session-form::-webkit-scrollbar-thumb,
+.dark .modal-body::-webkit-scrollbar-thumb,
+.dark #edit-preference-form::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, rgba(75, 85, 99, 0.6), rgba(55, 65, 81, 0.6));
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Modal footer - enhanced with glassmorphism */
+#modal-footer,
+#add-session-form > div:last-child,
+.modal-footer,
+#edit-preference-form > div:last-child {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    background: linear-gradient(135deg, 
+        rgba(248, 250, 252, 0.95) 0%, 
+        rgba(241, 245, 249, 0.95) 100%);
+    backdrop-filter: blur(10px) saturate(1.8);
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    border-radius: 0 0 1rem 1rem;
+    margin: 1rem -1.5rem -1.5rem -1.5rem;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.05) inset;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    min-height: 64px;
+    box-sizing: border-box;
+}
+
+/* Modal footer subtle gradient overlay */
+#modal-footer::before,
+#add-session-form > div:last-child::before,
+.modal-footer::before,
+#edit-preference-form > div:last-child::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(59, 130, 246, 0.3) 50%, 
+        transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#modal-footer:hover::before,
+#add-session-form > div:last-child:hover::before,
+.modal-footer:hover::before,
+#edit-preference-form > div:last-child:hover::before {
+    opacity: 1;
+}
+
+.dark #modal-footer,
+.dark #add-session-form > div:last-child,
+.dark .edit-preference-modal .modal-footer,
+.dark #edit-preference-form > div:last-child {
+    background: linear-gradient(135deg, 
+        rgba(17, 24, 39, 0.95) 0%, 
+        rgba(31, 41, 55, 0.95) 100%);
+    border-top: 1px solid rgba(75, 85, 99, 0.8);
+    box-shadow: 0 -1px 3px rgba(0, 0, 0, 0.3) inset;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    min-height: 64px;
+    box-sizing: border-box;
+}
+
+/* Enhanced modal close buttons */
+#modal-close,
+#add-modal-overlay button[onclick*="closeAddModal"],
+#edit-preference-close {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 50%;
+    color: #6b7280;
+    background-color: transparent;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.dark #modal-close,
+.dark #add-modal-overlay button[onclick*="closeAddModal"],
+.dark #edit-preference-close {
+    color: #9ca3af;
+}
+
+#modal-close::before,
+#add-modal-overlay button[onclick*="closeAddModal"]::before,
+#edit-preference-close::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, transparent, rgba(239, 68, 68, 0.15), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 50%;
+}
+
+#modal-close:hover::before,
+#add-modal-overlay button[onclick*="closeAddModal"]:hover::before,
+#edit-preference-close:hover::before {
+    transform: translateX(100%);
+}
+
+#modal-close:hover,
+#add-modal-overlay button[onclick*="closeAddModal"]:hover,
+#edit-preference-close:hover {
+    transform: scale(1.15) rotate(90deg);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.15));
+    color: #ef4444;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+#modal-close:active,
+#add-modal-overlay button[onclick*="closeAddModal"]:active,
+#edit-preference-close:active {
+    transform: scale(0.95) rotate(90deg);
+    transition: transform 0.1s ease;
+}
+
+/* Close button ripple effect */
+#modal-close::after,
+#add-modal-overlay button[onclick*="closeAddModal"]::after,
+#edit-preference-close::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(239, 68, 68, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+#modal-close:active::after,
+#add-modal-overlay button[onclick*="closeAddModal"]:active::after,
+#edit-preference-close:active::after {
+    width: 100px;
+    height: 100px;
+}
+
+/* Enhanced modal action buttons with magnetic effect */
+#modal-cancel,
+#add-session-form button[type="button"],
+#edit-preference-cancel {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px 24px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    will-change: transform, box-shadow;
+}
+
+#modal-cancel::before,
+#add-session-form button[type="button"]::before,
+#edit-preference-cancel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, transparent, rgba(107, 114, 128, 0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.4s ease;
+}
+
+#modal-cancel:hover::before,
+#add-session-form button[type="button"]:hover::before,
+#edit-preference-cancel:hover::before {
+    transform: translateX(100%);
+}
+
+#modal-cancel:hover,
+#add-session-form button[type="button"]:hover,
+#edit-preference-cancel:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12),
+                0 0 0 1px rgba(203, 213, 225, 0.4);
+    border-color: rgba(203, 213, 225, 0.9);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+#modal-cancel:active,
+#add-session-form button[type="button"]:active,
+#edit-preference-cancel:active {
+    transform: translateY(-1px) scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+.dark #modal-cancel,
+.dark #add-session-form button[type="button"],
+.dark #edit-preference-cancel {
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    border-color: rgba(75, 85, 99, 0.8);
+    color: #d1d5db;
+}
+
+.dark #modal-cancel:hover,
+.dark #add-session-form button[type="button"]:hover,
+.dark #edit-preference-cancel:hover {
+    border-color: rgba(107, 114, 128, 0.8);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Enhanced primary action buttons with magnetic glow */
+#modal-action,
+#add-session-form button[type="submit"],
+#edit-preference-form button[type="submit"] {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 12px 24px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    will-change: transform, box-shadow;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+#modal-action::before,
+#add-session-form button[type="submit"]::before,
+#edit-preference-form button[type="submit"]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#modal-action:hover::before,
+#add-session-form button[type="submit"]:hover::before,
+#edit-preference-form button[type="submit"]:hover::before {
+    transform: translateX(100%);
+}
+
+#modal-action:hover,
+#add-session-form button[type="submit"]:hover,
+#edit-preference-form button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+
+#modal-action:active,
+#add-session-form button[type="submit"]:active,
+#edit-preference-form button[type="submit"]:active {
+    transform: translateY(0);
+    transition: transform 0.1s ease;
+}
+
+#modal-action:hover::after,
+#add-session-form button[type="submit"]:hover::after,
+#edit-preference-form button[type="submit"]:hover::after {
+    opacity: 0.6;
+}
+
+/* Modal detail sections */
+.modal-detail {
+    background: linear-gradient(135deg, 
+        rgba(248, 250, 252, 0.8) 0%, 
+        rgba(241, 245, 249, 0.8) 100%);
+    border: 1px solid rgba(226, 232, 240, 0.6);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-detail::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(59, 130, 246, 0.05) 50%, 
+        transparent 100%);
+    transition: left 0.5s ease;
+}
+
+.modal-detail:hover::before {
+    left: 100%;
+}
+
+.modal-detail:hover {
+    background: linear-gradient(135deg, 
+        rgba(248, 250, 252, 0.95) 0%, 
+        rgba(241, 245, 249, 0.95) 100%);
+    border-color: rgba(203, 213, 225, 0.8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dark .modal-detail {
+    background: linear-gradient(135deg, 
+        rgba(31, 41, 55, 0.8) 0%, 
+        rgba(17, 24, 39, 0.8) 100%);
+    border-color: rgba(75, 85, 99, 0.6);
+}
+
+.dark .modal-detail:hover {
+    background: linear-gradient(135deg, 
+        rgba(31, 41, 55, 0.95) 0%, 
+        rgba(17, 24, 39, 0.95) 100%);
+    border-color: rgba(107, 114, 128, 0.8);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-detail strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.dark .modal-detail strong {
+    color: #f1f5f9;
+}
+
+/* Form field enhancements with smooth micro-interactions */
+#add-session-form input,
+#add-session-form select,
+#add-session-form textarea,
+#edit-preference-form input,
+#edit-preference-form select,
+#edit-preference-form textarea {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    position: relative;
+    will-change: transform, box-shadow, border-color;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) inset;
+}
+
+#add-session-form input:hover,
+#add-session-form select:hover,
+#add-session-form textarea:hover,
+#edit-preference-form input:hover,
+#edit-preference-form select:hover,
+#edit-preference-form textarea:hover {
+    border-color: rgba(203, 213, 225, 0.9);
+    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) inset,
+                0 0 0 1px rgba(59, 130, 246, 0.05);
+}
+
+#add-session-form input:focus,
+#add-session-form select:focus,
+#add-session-form textarea:focus,
+#edit-preference-form input:focus,
+#edit-preference-form select:focus,
+#edit-preference-form textarea:focus {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12),
+                0 2px 8px rgba(59, 130, 246, 0.1),
+                0 1px 3px rgba(0, 0, 0, 0.05) inset;
+    transform: translateY(-1px) scale(1.005);
+    outline: none;
+}
+
+/* Form field floating label animation with bounce effect */
+.form-field-wrapper {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.form-field-wrapper input:focus + .floating-label,
+.form-field-wrapper input:not(:placeholder-shown) + .floating-label,
+.form-field-wrapper textarea:focus + .floating-label,
+.form-field-wrapper textarea:not(:placeholder-shown) + .floating-label,
+.form-field-wrapper select:focus + .floating-label,
+.form-field-wrapper select:valid + .floating-label {
+    transform: translateY(-1.85rem) scale(0.82) translateX(-0.25rem);
+    color: #3b82f6;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    padding: 0.125rem 0.75rem;
+    border-radius: 0.375rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.floating-label {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    color: #6b7280;
+    font-size: 0.875rem;
+    transform-origin: left center;
+    z-index: 1;
+}
+
+/* Form field validation states with animated icons */
+.form-field-wrapper input:valid:not(:placeholder-shown),
+.form-field-wrapper textarea:valid:not(:placeholder-shown),
+.form-field-wrapper select:valid {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12),
+                0 2px 4px rgba(16, 185, 129, 0.1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-field-wrapper input:invalid:not(:placeholder-shown),
+.form-field-wrapper textarea:invalid:not(:placeholder-shown) {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12),
+                0 2px 4px rgba(239, 68, 68, 0.1);
+}
+
+/* Form field character counter with smooth transitions and pulse animation */
+.char-counter {
+    position: absolute;
+    right: 0.75rem;
+    bottom: -1.25rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #6b7280;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    background: transparent;
+    will-change: transform, color, background;
+}
+
+.char-counter.warning {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+    transform: scale(1.05);
+}
+
+.char-counter.error {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.15);
+    font-weight: 600;
+    transform: scale(1.1);
+}
+
+/* Form field floating labels effect */
+.form-field-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.form-field-group input:focus + .floating-label,
+.form-field-group input:not(:placeholder-shown) + .floating-label,
+.form-field-group textarea:focus + .floating-label,
+.form-field-group textarea:not(:placeholder-shown) + .floating-label {
+    transform: translateY(-1.5rem) scale(0.85);
+    color: #3b82f6;
+    background: white;
+    padding: 0 0.5rem;
+}
+
+.floating-label {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+/* Enhanced range slider styling with smooth animations */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    height: 32px;
+    padding: 8px 0;
+}
+
+input[type="range"]::-webkit-slider-track {
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #10b981 50%, #3b82f6 75%, #8b5cf6 100%);
+    height: 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) inset,
+                0 0 10px rgba(59, 130, 246, 0.1);
+    transition: all 0.3s ease;
+}
+
+input[type="range"]:hover::-webkit-slider-track {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12) inset,
+                0 0 20px rgba(59, 130, 246, 0.2);
+    transform: scaleY(1.1);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    height: 24px;
+    width: 24px;
+    border-radius: 50%;
+    border: 3px solid #3b82f6;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2),
+                0 0 0 0 rgba(59, 130, 246, 0.4);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: grab;
+    margin-top: -8px;
+    will-change: transform, box-shadow;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4),
+                0 0 0 4px rgba(59, 130, 246, 0.2);
+    border-width: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5),
+                0 0 0 6px rgba(59, 130, 246, 0.15);
+}
+
+input[type="range"]::-moz-range-track {
+    background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #10b981 50%, #3b82f6 75%, #8b5cf6 100%);
+    height: 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) inset,
+                0 0 10px rgba(59, 130, 246, 0.1);
+    transition: all 0.3s ease;
+}
+
+input[type="range"]::-moz-range-thumb {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    height: 24px;
+    width: 24px;
+    border-radius: 50%;
+    border: 3px solid #3b82f6;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2),
+                0 0 0 0 rgba(59, 130, 246, 0.4);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: grab;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.3);
+    box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4),
+                0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+input[type="range"]::-moz-range-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.15);
+}
+
+.dark #add-session-form input,
+.dark #add-session-form select,
+.dark #add-session-form textarea,
+.dark #edit-preference-form input,
+.dark #edit-preference-form select {
+    border-color: rgba(75, 85, 99, 0.8);
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+
+.dark #add-session-form input:focus,
+.dark #add-session-form select:focus,
+.dark #add-session-form textarea:focus,
+.dark #edit-preference-form input:focus,
+.dark #edit-preference-form select:focus {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Enhanced loading state for modals with shimmer and fade */
+.modal-loading {
+    position: relative;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.modal-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.4) 50%, 
+        transparent 100%);
+    opacity: 0.6;
+    z-index: 10;
+}
+
+.dark .modal-loading::after {
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(59, 130, 246, 0.2) 50%, 
+        transparent 100%);
+}
+
+
+
+/* Modal loading spinner with smooth rotation */
+.modal-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(59, 130, 246, 0.1);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    z-index: 11;
+}
+
+.modal-spinner::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border: 2px solid rgba(59, 130, 246, 0.05);
+    border-radius: 50%;
+    animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite reverse;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Skeleton loading for modal content */
+.modal-skeleton {
+    background: linear-gradient(90deg, 
+        rgba(226, 232, 240, 0.5) 0%,
+        rgba(241, 245, 249, 0.8) 50%,
+        rgba(226, 232, 240, 0.5) 100%);
+    border-radius: 0.5rem;
+}
+
+.dark .modal-skeleton {
+    background: linear-gradient(90deg, 
+        rgba(51, 65, 85, 0.5) 0%,
+        rgba(71, 85, 105, 0.8) 50%,
+        rgba(51, 65, 85, 0.5) 100%);
+}
+
+/* Modal content fade-in after loading */
+.modal-content-loaded {
+    opacity: 1;
+}
+
+
+
+/* Modal exit animation */
+.modal-exit {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Success animation for modal actions */
+.modal-success {
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+/* Error shake animation */
+.modal-error {
+    border-color: #ef4444;
+}
+
+/* Enhanced focus indicators for accessibility */
+.modal-focus-trap {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 0.5rem;
+}
+
+/* Focus visible enhancement for keyboard navigation */
+.modal-focus-trap:focus-visible {
+    outline: 3px solid #3b82f6;
+    outline-offset: 3px;
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.2);
+}
+
+/* Modal content focus management - enhanced for keyboard navigation */
+#modal-content *:focus-visible,
+#add-modal-content *:focus-visible,
+#edit-preference-content *:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-radius: 0.375rem;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    transition: outline 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Remove default focus outline for mouse users */
+#modal-content *:focus:not(:focus-visible),
+#add-modal-content *:focus:not(:focus-visible),
+#edit-preference-content *:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Enhanced keyboard navigation hints */
+#modal-content:focus-within,
+#add-modal-content:focus-within,
+#edit-preference-content:focus-within {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25),
+                0 0 0 1px rgba(59, 130, 246, 0.3) inset,
+                0 0 30px rgba(59, 130, 246, 0.12);
+}
+
+.dark #modal-content:focus-within,
+.dark #add-modal-content:focus-within,
+.dark #edit-preference-content:focus-within {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7),
+                0 0 0 1px rgba(59, 130, 246, 0.4) inset,
+                0 0 40px rgba(59, 130, 246, 0.25);
+}
+
+/* Skip to modal content link */
+.skip-to-modal {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary);
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 500;
+    z-index: var(--z-tooltip);
+    transition: var(--transition-fast);
+    border: 2px solid transparent;
+}
+
+.skip-to-modal:focus {
+    top: 6px;
+    outline: none;
+    border-color: white;
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+/* Smooth height transitions for dynamic content */
+.modal-content-transition {
+    transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+/* Enhanced button states with ripple effect and mobile touch feedback */
+.ripple-button {
+    position: relative;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.ripple-button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+                height 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+}
+
+.ripple-button:active::after {
+    width: 300px;
+    height: 300px;
+    transition: width 0s, height 0s;
+}
+
+/* Mobile touch feedback for all modal buttons */
+#modal-close:active,
+#modal-cancel:active,
+#modal-action:active,
+#add-modal-overlay button:active,
+#edit-preference-close:active,
+#edit-preference-cancel:active,
+#edit-preference-form button[type="submit"]:active {
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.2);
+    transform: scale(0.97);
+    transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Improved mobile responsiveness for modal buttons */
+@media (hover: none) and (pointer: coarse) {
+    #modal-close,
+    #modal-cancel,
+    #modal-action,
+    #add-modal-overlay button,
+    #edit-preference-close,
+    #edit-preference-cancel,
+    #edit-preference-form button[type="submit"] {
+        min-height: 48px;
+        min-width: 48px;
+        font-size: 16px;
+        padding: 14px 28px;
+        touch-action: manipulation;
+    }
+    
+    #add-session-form input,
+    #add-session-form select,
+    #add-session-form textarea,
+    #edit-preference-form input,
+    #edit-preference-form select,
+    #edit-preference-form textarea {
+        font-size: 16px;
+        min-height: 48px;
+        padding: 14px 16px;
+    }
+}
+
+/* Modal footer - sticky at bottom */
+.modal-footer {
+    position: sticky;
+    bottom: 0;
+    background-color: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    margin: 1rem -1.5rem -1.5rem -1.5rem;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.dark .modal-footer {
+    background-color: var(--bg-secondary);
+    border-top-color: var(--border-color-light);
+}
+
+/* Modal content sections */
+.modal-section {
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-color-light);
+}
+
+.modal-section:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.dark .modal-section {
+    border-bottom-color: rgba(51, 65, 85, 0.3);
+}
+
+/* Modal responsive behavior */
+@media (max-width: 640px) {
+    #modal-content,
+    #add-modal-content,
+    #edit-preference-content {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+        max-height: calc(100vh - 2rem);
+        border-radius: 0.75rem;
+    }
+    
+    #modal-content > div:first-child,
+    #add-modal-content > div:first-child,
+    #edit-preference-content > div:first-child {
+        margin: -1rem -1rem 1rem -1rem;
+        padding: 1rem;
+        border-radius: 0.75rem 0.75rem 0 0;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    #modal-body,
+    #add-session-form,
+    .modal-body,
+    #edit-preference-form {
+        max-height: calc(100vh - 200px);
+        padding: 1rem;
+    }
+    
+    #modal-footer,
+    #add-session-form > div:last-child,
+    .modal-footer,
+    #edit-preference-form > div:last-child {
+        margin: 1rem -1rem -1rem -1rem;
+        padding: 1rem;
+        border-radius: 0 0 0.75rem 0.75rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    /* Adjust animations for mobile */
+    #modal-content,
+    #add-modal-content,
+    #edit-preference-content {
+        transform: scale(0.95) translateY(20px) rotateX(1deg);
+    }
+    
+    #modal-overlay.active #modal-content,
+    #add-modal-overlay.active #add-modal-content,
+    #edit-preference-modal.active #edit-preference-content {
+        transform: scale(1) translateY(0) rotateX(0deg);
+    }
+}
+
+/* Modal touch-friendly interactions for mobile */
+@media (hover: none) and (pointer: coarse) {
+    #modal-close:hover,
+    #add-modal-overlay button[onclick*="closeAddModal"]:hover,
+    #edit-preference-close:hover {
+        transform: scale(1.1);
+    }
+    
+    #modal-action:hover,
+    #add-session-form button[type="submit"]:hover,
+    #edit-preference-form button[type="submit"]:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* Remove hover effects that don't work well on touch */
+    #modal-close::before,
+    #add-modal-overlay button[onclick*="closeAddModal"]::before,
+    #edit-preference-close::before,
+    #modal-action::before,
+    #add-session-form button[type="submit"]::before,
+    #edit-preference-form button[type="submit"]::before {
+        display: none;
+    }
+}
+
+/* Modal field groups - improved layout */
+.modal-field-group {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 0.75rem;
+    align-items: start;
+    margin-bottom: 0.875rem;
+}
+
+.modal-field-group label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    padding-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.modal-field-group .field-value {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.dark .modal-field-group .field-value {
+    background-color: rgba(30, 41, 59, 0.5);
+    border-color: var(--border-color-light);
+}
+
+@media (max-width: 640px) {
+    .modal-field-group {
+        grid-template-columns: 1fr;
+        gap: 0.375rem;
+    }
+    
+    .modal-field-group label {
+        padding-top: 0;
+    }
+}
+
+/* Toast notification slide-in with enhanced polish */
+.toast {
+    transform: translateX(400px) scale(0.95);
+    opacity: 0;
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.toast.show {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+}
+
+/* ============================================
+   SCROLLBAR CUSTOMIZATION
+   ============================================ */
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--radius-sm);
+    transition: var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+::-webkit-scrollbar-corner {
+    background: var(--bg-secondary);
+}
+
+/* ============================================
+   ACCESSIBILITY & MOTION PREFERENCES
+   ============================================ */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .status-dot,
+    .skeleton,
+    .loading-spinner {
+        animation: none;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: var(--text-primary);
+        --border-color-light: var(--text-secondary);
+    }
+}
+
+/* ============================================
+   ENHANCED FORM INPUTS (Modal Forms)
+   ============================================ */
+
+/* Input focus states with ring and scale effects */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    transform: scale(1.005);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 
+                0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode form field enhancements - matching light mode polish */
+.dark #add-session-form input,
+.dark #add-session-form select,
+.dark #add-session-form textarea,
+.dark #edit-preference-form input,
+.dark #edit-preference-form select,
+.dark #edit-preference-form textarea {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+    border-color: rgba(71, 85, 105, 0.5);
+    color: #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) inset,
+                0 0 0 1px rgba(71, 85, 105, 0.2);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, box-shadow, border-color, background;
+}
+
+.dark #add-session-form input:hover,
+.dark #add-session-form select:hover,
+.dark #add-session-form textarea:hover,
+.dark #edit-preference-form input:hover,
+.dark #edit-preference-form select:hover,
+.dark #edit-preference-form textarea:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) inset,
+                0 0 0 1px rgba(59, 130, 246, 0.2),
+                0 0 12px rgba(59, 130, 246, 0.1);
+}
+
+.dark #add-session-form input:focus,
+.dark #add-session-form select:focus,
+.dark #add-session-form textarea:focus,
+.dark #edit-preference-form input:focus,
+.dark #edit-preference-form select:focus,
+.dark #edit-preference-form textarea:focus {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 1) 100%);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2),
+                0 2px 8px rgba(59, 130, 246, 0.3),
+                0 2px 4px rgba(0, 0, 0, 0.3) inset;
+    transform: translateY(-1px) scale(1.005);
+    outline: none;
+}
+
+/* Dark mode validation states */
+.dark .form-field-wrapper input:valid:not(:placeholder-shown),
+.dark .form-field-wrapper textarea:valid:not(:placeholder-shown),
+.dark .form-field-wrapper select:valid {
+    border-color: #10b981;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(6, 78, 59, 0.3) 100%);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2),
+                0 2px 4px rgba(16, 185, 129, 0.2);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark .form-field-wrapper input:invalid:not(:placeholder-shown),
+.dark .form-field-wrapper textarea:invalid:not(:placeholder-shown) {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(127, 29, 29, 0.3) 100%);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2),
+                0 2px 4px rgba(239, 68, 68, 0.2);
+    transition: all 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* Dark mode floating labels */
+.dark .form-field-wrapper input:focus + .floating-label,
+.dark .form-field-wrapper input:not(:placeholder-shown) + .floating-label,
+.dark .form-field-wrapper textarea:focus + .floating-label,
+.dark .form-field-wrapper textarea:not(:placeholder-shown) + .floating-label,
+.dark .form-field-wrapper select:focus + .floating-label,
+.dark .form-field-wrapper select:valid + .floating-label {
+    color: #60a5fa;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Dark mode character counter */
+.dark .char-counter {
+    color: #94a3b8;
+}
+
+.dark .char-counter.warning {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.dark .char-counter.error {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.2);
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark input[type="number"]:focus,
+.dark select:focus,
+.dark textarea:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 
+                0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Enhanced placeholder styling */
+input::placeholder,
+textarea::placeholder {
+    transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+input:focus::placeholder,
+textarea:focus::placeholder {
+    opacity: 0.5;
+    color: var(--text-tertiary);
+}
+
+/* Smooth transition for all form controls */
+input,
+select,
+textarea {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   POLISHED MODAL BUTTONS
+   ============================================ */
+
+/* Primary action buttons - scale and shadow effects */
+button[type="submit"],
+button.bg-gradient-to-r,
+#modal-action {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button[type="submit"]:hover,
+button.bg-gradient-to-r:hover,
+#modal-action:hover {
+    transform: scale(1.03);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.dark button[type="submit"]:hover,
+.dark button.bg-gradient-to-r:hover,
+.dark #modal-action:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+button[type="submit"]:active,
+button.bg-gradient-to-r:active,
+#modal-action:active {
+    transform: scale(0.98);
+}
+
+/* Secondary/Cancel buttons - subtle effects */
+button[type="button"],
+#modal-cancel,
+button.bg-white,
+button.dark\:bg-gray-800 {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button[type="button"]:hover,
+#modal-cancel:hover {
+    transform: scale(1.02);
+}
+
+button[type="button"]:active,
+#modal-cancel:active {
+    transform: scale(0.98);
+}
+
+/* Close button hover effects */
+button[aria-label*="Close"]:hover {
+    transform: scale(1.1) rotate(90deg);
+}
+
+button[aria-label*="Close"]:active {
+    transform: scale(0.95) rotate(90deg);
+}
+
+/* ============================================
+   STATS CARD ENHANCEMENTS (Phase 4)
+   ============================================ */
+
+/* Stat card container - enhanced hover effects */
+.stat-card {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.12),
+                0 4px 8px -2px rgba(0, 0, 0, 0.08);
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+.dark .stat-card:hover {
+    box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.5),
+                0 4px 12px -2px rgba(0, 0, 0, 0.4);
+    border-color: rgba(59, 130, 246, 0.6);
+}
+
+/* Stat card active state */
+.stat-card[data-loading="false"] {
+    border-color: var(--border-color);
+}
+
+/* Stat icon container */
+.stat-icon {
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.stat-card:hover .stat-icon {
+    transform: scale(1.1);
+}
+
+/* Stat value - smooth number transitions */
+.stat-value {
+    font-variant-numeric: tabular-nums;
+    transition: color 0.2s ease;
+    display: inline-block;
+}
+
+/* Skeleton loading states */
+.skeleton-text {
+    display: inline-block;
+    background: linear-gradient(
+        90deg,
+        var(--bg-secondary) 0%,
+        var(--border-color) 20%,
+        var(--bg-secondary) 40%,
+        var(--bg-secondary) 100%
+    );
+    border-radius: 0.25rem;
+    color: transparent;
+    user-select: none;
+    min-width: 3ch;
+}
+
+.dark .skeleton-text {
+    background: linear-gradient(
+        90deg,
+        rgba(30, 41, 59, 0.8) 0%,
+        rgba(51, 65, 85, 0.6) 20%,
+        rgba(30, 41, 59, 0.8) 40%,
+        rgba(30, 41, 59, 0.8) 100%
+    );
+}
+
+
+/* Hide skeleton when data is loaded */
+.stat-card[data-loading="false"] .skeleton-text {
+    display: none;
+}
+
+/* Trend indicator container */
+.trend-indicator {
+    transition: opacity 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Show trend indicator when data is available */
+.stat-card[data-loading="false"] .trend-indicator:not(.hidden) {
+    opacity: 1;
+}
+
+/* Trend up - positive change */
+.trend-up {
+    color: #059669;
+}
+
+.dark .trend-up {
+    color: #34d399;
+}
+
+.trend-up svg {
+    stroke: currentColor;
+}
+
+/* Trend down - negative change */
+.trend-down {
+    color: #dc2626;
+}
+
+.dark .trend-down {
+    color: #f87171;
+}
+
+.trend-down svg {
+    stroke: currentColor;
+}
+
+/* Trend neutral - no significant change */
+.trend-neutral {
+    color: var(--text-tertiary);
+}
+
+.trend-neutral svg {
+    stroke: currentColor;
+}
+
+/* Loading state - simple border */
+.stat-card[data-loading="true"] {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.dark .stat-card[data-loading="true"] {
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+/* Stat card gradient background on hover - subtle effect */
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+        circle at 50% 50%,
+        rgba(59, 130, 246, 0.05) 0%,
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.dark .stat-card::before {
+    background: radial-gradient(
+        circle at 50% 50%,
+        rgba(59, 130, 246, 0.1) 0%,
+        transparent 70%
+    );
+}
+
+/* Ensure stat card content stays above gradient */
+.stat-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Stat icon pulse on data update */
+.stat-card[data-loading="false"] .stat-icon {
+    transition: transform 0.3s ease;
+}
+
+/* Stat label subtle entrance */
+.stat-label {
+    opacity: 1;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.stat-card:nth-child(1) .stat-label { transition-delay: 0.15s; }
+.stat-card:nth-child(2) .stat-label { transition-delay: 0.25s; }
+.stat-card:nth-child(3) .stat-label { transition-delay: 0.35s; }
+.stat-card:nth-child(4) .stat-label { transition-delay: 0.45s; }
+
+/* Card edge glow on hover - premium effect */
+.stat-card::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.4) 0%,
+        rgba(147, 51, 234, 0.4) 50%,
+        rgba(236, 72, 153, 0.4) 100%
+    );
+    border-radius: inherit;
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+    filter: blur(8px);
+}
+
+.stat-card:hover::after {
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+}
+
+.dark .stat-card::after {
+    background: linear-gradient(
+        135deg,
+        rgba(59, 130, 246, 0.6) 0%,
+        rgba(147, 51, 234, 0.6) 50%,
+        rgba(236, 72, 153, 0.6) 100%
+    );
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+    .stat-card:hover {
+        transform: translateY(-2px) scale(1.01);
+    }
+    
+    .trend-indicator {
+        font-size: 0.6875rem;
+        margin-left: 0.375rem;
+    }
+
+    .stat-card::after {
+        display: none;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+    .theme-toggle,
+    .view-toggle,
+    .refresh-btn,
+    .footer-actions,
+    .toast {
+        display: none !important;
+    }
+
+    .container {
+        box-shadow: none;
+        border-radius: 0;
+    }
+
+    .data-card,
+    .stat-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    /* Hide trend indicators in print */
+    .trend-indicator {
+        display: none !important;
+    }
+    
+    /* Remove hover effects in print */
+    .stat-card::before {
+        display: none !important;
+    }
+}
+
+/* Global Loading Indicator */
+#global-loading.active {
+    display: flex !important;
+}
+
+/* Toast Container */
+#toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none;
+    max-width: 400px;
+}
+
+.toast {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    min-width: 320px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15),
+                0 2px 8px rgba(0, 0, 0, 0.1);
+    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark .toast {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                0 2px 12px rgba(0, 0, 0, 0.3);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+.toast:hover {
+    transform: translateX(-4px) scale(1.02);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2),
+                0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dark .toast:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5),
+                0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Toast type variants with gradient accents */
+.toast.success {
+    border-left: 4px solid var(--success);
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.05) 0%, 
+        var(--bg-secondary) 20%);
+}
+
+.dark .toast.success {
+    background: linear-gradient(135deg, 
+        rgba(16, 185, 129, 0.1) 0%, 
+        rgba(30, 41, 59, 0.95) 20%);
+}
+
+.toast.error {
+    border-left: 4px solid var(--danger);
+    background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.05) 0%, 
+        var(--bg-secondary) 20%);
+}
+
+.dark .toast.error {
+    background: linear-gradient(135deg, 
+        rgba(239, 68, 68, 0.1) 0%, 
+        rgba(30, 41, 59, 0.95) 20%);
+}
+
+.toast.warning {
+    border-left: 4px solid var(--warning);
+    background: linear-gradient(135deg, 
+        rgba(251, 191, 36, 0.05) 0%, 
+        var(--bg-secondary) 20%);
+}
+
+.dark .toast.warning {
+    background: linear-gradient(135deg, 
+        rgba(251, 191, 36, 0.1) 0%, 
+        rgba(30, 41, 59, 0.95) 20%);
+}
+
+.toast.info {
+    border-left: 4px solid var(--primary);
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.05) 0%, 
+        var(--bg-secondary) 20%);
+}
+
+.dark .toast.info {
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.1) 0%, 
+        rgba(30, 41, 59, 0.95) 20%);
+}
+
+/* Toast auto-dismiss progress bar */
+.toast::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: linear-gradient(90deg, 
+        rgba(59, 130, 246, 0.3), 
+        rgba(59, 130, 246, 0.8));
+    transform-origin: left;
+    animation: toastProgress 3s linear forwards;
+}
+
+.toast.success::before {
+    background: linear-gradient(90deg, 
+        rgba(16, 185, 129, 0.3), 
+        rgba(16, 185, 129, 0.8));
+}
+
+.toast.error::before {
+    background: linear-gradient(90deg, 
+        rgba(239, 68, 68, 0.3), 
+        rgba(239, 68, 68, 0.8));
+}
+
+.toast.warning::before {
+    background: linear-gradient(90deg, 
+        rgba(251, 191, 36, 0.3), 
+        rgba(251, 191, 36, 0.8));
+}
+
+@keyframes toastProgress {
+    0% { transform: scaleX(1); }
+    100% { transform: scaleX(0); }
+}
+
+/* Toast exit state */
+.toast.exit {
+    transform: translateX(100%);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Toast stacking management */
+.toast:nth-child(n+4) {
+    opacity: 0.6;
+    transform: scale(0.95) translateY(-8px);
+    pointer-events: none;
+}
+
+.toast:nth-child(n+5) {
+    display: none;
+}
+
+/* Toast icon (no animation) */
+.toast .lucide-icon {
+    opacity: 1;
+}
+
+
+/* Mobile responsive toast */
+@media (max-width: 640px) {
+    #toast-container {
+        top: 0.5rem;
+        right: 0.5rem;
+        left: 0.5rem;
+        max-width: 100%;
+    }
+    
+    .toast {
+        min-width: auto;
+        width: 100%;
+    }
+}
+
+/* ===================================================================
+   GLOBAL LOADING STATES - Phase 4 UI Polish
+   =================================================================== */
+
+/* ----------------------------------------
+   1. Page Transition Overlay
+   ---------------------------------------- */
+
+.page-transition-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(139, 92, 246, 0.95));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-transition-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.dark .page-transition-overlay {
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.95), rgba(88, 28, 135, 0.95));
+}
+
+.page-transition-spinner {
+    width: 64px;
+    height: 64px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.page-transition-text {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+}
+
+/* Page entrance animation */
+.page-enter {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* ----------------------------------------
+   2. Button Loading Spinners
+   ---------------------------------------- */
+
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    color: transparent !important;
+}
+
+.btn-loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: currentColor;
+    border-radius: 50%;
+}
+
+/* Size variants */
+.btn-loading.btn-sm::after {
+    width: 12px;
+    height: 12px;
+    border-width: 1.5px;
+}
+
+.btn-loading.btn-lg::after {
+    width: 20px;
+    height: 20px;
+    border-width: 2.5px;
+}
+
+/* Button with inline spinner (keeps text visible) */
+.btn-inline-loading {
+    position: relative;
+    padding-left: 2.5rem !important;
+}
+
+.btn-inline-loading::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: currentColor;
+    border-radius: 50%;
+}
+
+/* Success state animation */
+.btn-success-flash {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ----------------------------------------
+   3. Progress Bars
+   ---------------------------------------- */
+
+/* Top-of-viewport progress bar (like YouTube/GitHub) */
+.progress-bar-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+    background-size: 200% 100%;
+    z-index: 9998;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.progress-bar-top.active {
+    opacity: 1;
+}
+
+.progress-bar-top.complete {
+    transform: scaleX(1);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.progress-bar-top.complete.fade-out {
+    opacity: 0;
+    transition: opacity 0.3s ease 0.2s;
+}
+
+/* Inline progress bar component */
+.progress-bar-inline {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(59, 130, 246, 0.1);
+    border-radius: 9999px;
+    overflow: hidden;
+    position: relative;
+}
+
+.dark .progress-bar-inline {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 9999px;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Indeterminate progress bar */
+.progress-bar-indeterminate .progress-bar-fill {
+    width: 40% !important;
+    opacity: 0.8;
+}
+
+/* Segmented progress bar (multi-step) */
+.progress-steps {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.progress-step {
+    flex: 1;
+    height: 6px;
+    background-color: rgba(59, 130, 246, 0.1);
+    border-radius: 9999px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark .progress-step {
+    background-color: rgba(59, 130, 246, 0.15);
+}
+
+.progress-step.completed {
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.progress-step.active {
+    opacity: 1;
+}
+
+/* ----------------------------------------
+   4. Skeleton Screens
+   ---------------------------------------- */
+
+.skeleton {
+    background: linear-gradient(90deg, 
+        rgba(229, 231, 235, 0.4) 0%,
+        rgba(229, 231, 235, 0.7) 50%,
+        rgba(229, 231, 235, 0.4) 100%
+    );
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.dark .skeleton {
+    background: linear-gradient(90deg, 
+        rgba(55, 65, 81, 0.4) 0%,
+        rgba(55, 65, 81, 0.7) 50%,
+        rgba(55, 65, 81, 0.4) 100%
+    );
+}
+
+/* Skeleton shapes */
+.skeleton-text {
+    height: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-text:last-child {
+    width: 70%; /* Shorter last line */
+}
+
+.skeleton-title {
+    height: 1.5rem;
+    width: 60%;
+    margin-bottom: 1rem;
+}
+
+.skeleton-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+
+.skeleton-card {
+    height: 120px;
+    width: 100%;
+}
+
+.skeleton-table-row {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+}
+
+.dark .skeleton-table-row {
+    border-bottom-color: rgba(55, 65, 81, 0.3);
+}
+
+.skeleton-table-cell {
+    height: 1rem;
+    flex: 1;
+}
+
+/* Dashboard skeleton composition */
+.skeleton-dashboard-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .skeleton-dashboard-card {
+    background: rgba(31, 41, 55, 0.5);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Chart skeleton */
+.skeleton-chart {
+    height: 300px;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    padding: 1rem;
+}
+
+.skeleton-chart-bar {
+    flex: 1;
+    background: linear-gradient(180deg, 
+        rgba(59, 130, 246, 0.3),
+        rgba(59, 130, 246, 0.1)
+    );
+    border-radius: 4px 4px 0 0;
+}
+
+.skeleton-chart-bar:nth-child(1) { height: 60%; }
+.skeleton-chart-bar:nth-child(2) { height: 80%; }
+.skeleton-chart-bar:nth-child(3) { height: 50%; }
+.skeleton-chart-bar:nth-child(4) { height: 90%; }
+.skeleton-chart-bar:nth-child(5) { height: 70%; }
+
+/* ----------------------------------------
+   5. Spinner Variants
+   ---------------------------------------- */
+
+/* Dot spinner (three bouncing dots) */
+.spinner-dots {
+    display: inline-flex;
+    gap: 0.5rem;
+}
+
+.spinner-dot {
+    width: 8px;
+    height: 8px;
+    background-color: currentColor;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+/* Pulse spinner (expanding ring) */
+.spinner-pulse {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: currentColor;
+    opacity: 0.6;
+}
+
+/* Dual ring spinner */
+.spinner-dual-ring {
+    width: 40px;
+    height: 40px;
+    position: relative;
+}
+
+.spinner-dual-ring::after,
+.spinner-dual-ring::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 3px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+}
+
+.spinner-dual-ring::before {
+    border-top-color: transparent;
+    border-bottom-color: currentColor;
+}
+
+/* ----------------------------------------
+   6. Loading State Overlays
+   ---------------------------------------- */
+
+/* Content area loading overlay */
+.loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    z-index: 100;
+    border-radius: inherit;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.dark .loading-overlay {
+    background: rgba(17, 24, 39, 0.8);
+}
+
+.loading-overlay-text {
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.dark .loading-overlay-text {
+    color: #9ca3af;
+}
+
+/* Inline loader (for small components) */
+.inline-loader {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(59, 130, 246, 0.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 0.5rem;
+}
+
+/* ----------------------------------------
+   7. State Transition Helpers
+   ---------------------------------------- */
+
+/* Fade transition */
+.fade-enter {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.fade-exit {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Slide transitions */
+.slide-up-enter {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.slide-down-enter {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Scale transition (for modals/popovers) */
+.scale-enter {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* ============================================
+   ADDITIONAL MOBILE RESPONSIVENESS
+   Phase 4 UI Polish - Touch Targets & Scroll
+   ============================================ */
+
+/* Ensure minimum touch target size (44x44px) on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .action-btn,
+    .edit-btn,
+    .delete-btn,
+    button[onclick],
+    .pagination button {
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    /* Increase table row touch targets */
+    tbody tr[style*="cursor: pointer"] td {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+    
+    /* Larger checkbox/radio touch targets */
+    input[type="checkbox"],
+    input[type="radio"] {
+        min-width: 20px;
+        min-height: 20px;
+    }
+}
+
+/* Horizontal scroll indicator for tables on mobile */
+@media (max-width: 768px) {
+    .overflow-x-auto {
+        position: relative;
+    }
+    
+    /* Fade gradient to indicate more content */
+    .overflow-x-auto::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 40px;
+        background: linear-gradient(to left, var(--bg-primary) 0%, transparent 100%);
+        pointer-events: none;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
+    
+    .dark .overflow-x-auto::after {
+        background: linear-gradient(to left, var(--bg-secondary) 0%, transparent 100%);
+    }
+    
+    /* Hide scroll indicator when scrolled to end */
+    .overflow-x-auto.scrolled-end::after {
+        opacity: 0;
+    }
+    
+    /* Improve tab navigation on mobile */
+    .tab-btn,
+    [role="tab"] {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Stack filter controls on small screens */
+    .filter-controls {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .filter-controls > * {
+        width: 100%;
+    }
+    
+    /* Compact stat cards on mobile */
+    .stat-card {
+        padding: 1rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    /* Even more compact spacing */
+    .px-6 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    /* Stack action buttons vertically */
+    .actions-cell .flex {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    /* Ensure modals don't overflow on very small screens */
+    #modal-content,
+    #add-modal-content,
+    #edit-preference-content {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+        max-height: calc(100vh - 1rem);
+    }
+}

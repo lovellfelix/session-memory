@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading States Demo - Session Memory MCP</title>
+    <link rel="stylesheet" href="./styles.css">
+    <style>
+        body {
+            padding: 2rem;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            min-height: 100vh;
+        }
+        
+        .dark body {
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dark .demo-section {
+            background: rgba(31, 41, 55, 0.8);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .demo-section h2 {
+            margin-top: 0;
+            color: #1f2937;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .dark .demo-section h2 {
+            color: #f9fafb;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .demo-item {
+            padding: 1.5rem;
+            border: 2px dashed #e5e7eb;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .dark .demo-item {
+            border-color: #374151;
+        }
+        
+        .demo-item-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .dark .demo-item-label {
+            color: #9ca3af;
+        }
+        
+        .demo-button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+        
+        .demo-button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .control-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        
+        .theme-toggle {
+            padding: 0.5rem 1rem;
+            background: #1f2937;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .dark .theme-toggle {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .skeleton-demo-grid {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .progress-demo-container {
+            width: 100%;
+            margin-bottom: 1.5rem;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .dark .progress-label {
+            color: #9ca3af;
+        }
+        
+        .spinner-showcase {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .spinner-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .relative-container {
+            position: relative;
+            height: 200px;
+            background: #f9fafb;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .dark .relative-container {
+            background: #1f2937;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="control-panel">
+            <h1 style="margin: 0; color: #1f2937;">🎨 Loading States Demo</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">Toggle Dark Mode</button>
+        </div>
+
+        <!-- Page Transition Demo -->
+        <div class="demo-section">
+            <h2>1. Page Transition Overlay</h2>
+            <button class="demo-button" onclick="showPageTransition()">
+                Trigger Page Transition
+            </button>
+            <p style="color: #6b7280; margin-top: 1rem;">
+                Full-screen overlay with blur backdrop and centered spinner
+            </p>
+        </div>
+
+        <!-- Button Loading States -->
+        <div class="demo-section">
+            <h2>2. Button Loading States</h2>
+            <div class="demo-button-group">
+                <button class="demo-button" onclick="loadButton(this, 'full')">
+                    Full Loading State
+                </button>
+                <button class="demo-button" onclick="loadButton(this, 'inline')">
+                    Inline Loading State
+                </button>
+                <button class="demo-button" onclick="loadButton(this, 'success')">
+                    Success Flash
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Bars -->
+        <div class="demo-section">
+            <h2>3. Progress Bars</h2>
+            
+            <div class="progress-demo-container">
+                <div class="progress-label">
+                    <span>Determinate Progress</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar-inline">
+                    <div class="progress-bar-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <button class="demo-button" style="margin-top: 1rem;" onclick="animateProgress()">
+                    Animate Progress
+                </button>
+            </div>
+
+            <div class="progress-demo-container">
+                <div class="progress-label">
+                    <span>Indeterminate Progress</span>
+                </div>
+                <div class="progress-bar-inline progress-bar-indeterminate">
+                    <div class="progress-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="progress-demo-container">
+                <div class="progress-label">
+                    <span>Multi-Step Progress</span>
+                </div>
+                <div class="progress-steps" id="progress-steps">
+                    <div class="progress-step completed"></div>
+                    <div class="progress-step completed"></div>
+                    <div class="progress-step active"></div>
+                    <div class="progress-step"></div>
+                    <div class="progress-step"></div>
+                </div>
+                <button class="demo-button" style="margin-top: 1rem;" onclick="advanceStep()">
+                    Advance Step
+                </button>
+            </div>
+
+            <div class="progress-demo-container">
+                <button class="demo-button" onclick="showTopProgress()">
+                    Show Top Progress Bar
+                </button>
+            </div>
+        </div>
+
+        <!-- Spinner Variants -->
+        <div class="demo-section">
+            <h2>4. Spinner Variants</h2>
+            <div class="spinner-showcase">
+                <div class="spinner-item">
+                    <div class="page-transition-spinner" style="width: 40px; height: 40px;"></div>
+                    <span class="demo-item-label">Ring Spinner</span>
+                </div>
+                <div class="spinner-item">
+                    <div class="spinner-dots" style="color: #3b82f6;">
+                        <div class="spinner-dot"></div>
+                        <div class="spinner-dot"></div>
+                        <div class="spinner-dot"></div>
+                    </div>
+                    <span class="demo-item-label">Dot Spinner</span>
+                </div>
+                <div class="spinner-item">
+                    <div class="spinner-pulse" style="color: #8b5cf6;"></div>
+                    <span class="demo-item-label">Pulse Spinner</span>
+                </div>
+                <div class="spinner-item">
+                    <div class="spinner-dual-ring" style="color: #ec4899;"></div>
+                    <span class="demo-item-label">Dual Ring</span>
+                </div>
+                <div class="spinner-item">
+                    <div class="inline-loader"></div>
+                    <span class="demo-item-label">Inline Loader</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlays -->
+        <div class="demo-section">
+            <h2>5. Loading Overlays</h2>
+            <div class="demo-grid">
+                <div>
+                    <p class="demo-item-label" style="margin-bottom: 1rem;">Content Loading Overlay</p>
+                    <div class="relative-container" id="overlay-demo">
+                        <p style="color: #6b7280;">Content behind overlay</p>
+                    </div>
+                    <button class="demo-button" style="margin-top: 1rem;" onclick="toggleOverlay()">
+                        Toggle Overlay
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skeleton Screens -->
+        <div class="demo-section">
+            <h2>6. Skeleton Screens</h2>
+            <div class="skeleton-demo-grid">
+                <div class="skeleton-dashboard-card">
+                    <div class="skeleton skeleton-title"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text"></div>
+                    <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; align-items: center; padding: 1rem; background: white; border-radius: 8px;">
+                    <div class="skeleton skeleton-avatar"></div>
+                    <div style="flex: 1;">
+                        <div class="skeleton skeleton-text" style="width: 40%; margin-bottom: 0.5rem;"></div>
+                        <div class="skeleton skeleton-text" style="width: 60%;"></div>
+                    </div>
+                </div>
+
+                <div class="skeleton skeleton-chart">
+                    <div class="skeleton-chart-bar"></div>
+                    <div class="skeleton-chart-bar"></div>
+                    <div class="skeleton-chart-bar"></div>
+                    <div class="skeleton-chart-bar"></div>
+                    <div class="skeleton-chart-bar"></div>
+                </div>
+
+                <div style="background: white; border-radius: 8px; overflow: hidden;">
+                    <div class="skeleton-table-row">
+                        <div class="skeleton skeleton-table-cell"></div>
+                        <div class="skeleton skeleton-table-cell"></div>
+                        <div class="skeleton skeleton-table-cell"></div>
+                    </div>
+                    <div class="skeleton-table-row">
+                        <div class="skeleton skeleton-table-cell"></div>
+                        <div class="skeleton skeleton-table-cell"></div>
+                        <div class="skeleton skeleton-table-cell"></div>
+                    </div>
+                    <div class="skeleton-table-row">
+                        <div class="skeleton skeleton-table-cell"></div>
+                        <div class="skeleton skeleton-table-cell"></div>
+                        <div class="skeleton skeleton-table-cell"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- State Transitions -->
+        <div class="demo-section">
+            <h2>7. State Transition Helpers</h2>
+            <div class="demo-button-group">
+                <button class="demo-button" onclick="triggerTransition('fade')">
+                    Fade Transition
+                </button>
+                <button class="demo-button" onclick="triggerTransition('slide-up')">
+                    Slide Up
+                </button>
+                <button class="demo-button" onclick="triggerTransition('slide-down')">
+                    Slide Down
+                </button>
+                <button class="demo-button" onclick="triggerTransition('scale')">
+                    Scale Transition
+                </button>
+            </div>
+            <div id="transition-demo" style="margin-top: 2rem; padding: 2rem; background: #f3f4f6; border-radius: 8px; text-align: center;">
+                <p style="color: #1f2937; font-weight: 500;">Transition Demo Area</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Transition Overlay (hidden by default) -->
+    <div class="page-transition-overlay" id="page-overlay">
+        <div class="page-transition-spinner"></div>
+        <div class="page-transition-text">Loading...</div>
+    </div>
+
+    <!-- Top Progress Bar -->
+    <div class="progress-bar-top" id="top-progress"></div>
+
+    <script>
+        // Theme toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // Page transition
+        function showPageTransition() {
+            const overlay = document.getElementById('page-overlay');
+            overlay.classList.add('active');
+            setTimeout(() => {
+                overlay.classList.remove('active');
+            }, 3000);
+        }
+
+        // Button loading states
+        function loadButton(btn, type) {
+            const originalText = btn.textContent;
+            
+            if (type === 'full') {
+                btn.classList.add('btn-loading');
+                setTimeout(() => {
+                    btn.classList.remove('btn-loading');
+                }, 2000);
+            } else if (type === 'inline') {
+                btn.classList.add('btn-inline-loading');
+                btn.textContent = 'Loading...';
+                setTimeout(() => {
+                    btn.classList.remove('btn-inline-loading');
+                    btn.textContent = originalText;
+                }, 2000);
+            } else if (type === 'success') {
+                btn.classList.add('btn-loading');
+                setTimeout(() => {
+                    btn.classList.remove('btn-loading');
+                    btn.classList.add('btn-success-flash');
+                    btn.textContent = '✓ Success!';
+                    setTimeout(() => {
+                        btn.classList.remove('btn-success-flash');
+                        btn.textContent = originalText;
+                    }, 1000);
+                }, 1500);
+            }
+        }
+
+        // Animate progress bar
+        function animateProgress() {
+            const fill = document.getElementById('progress-fill');
+            const percent = document.getElementById('progress-percent');
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += 2;
+                fill.style.width = progress + '%';
+                percent.textContent = progress + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        fill.style.width = '0%';
+                        percent.textContent = '0%';
+                    }, 1000);
+                }
+            }, 30);
+        }
+
+        // Multi-step progress
+        let currentStep = 2;
+        function advanceStep() {
+            const steps = document.querySelectorAll('#progress-steps .progress-step');
+            if (currentStep >= steps.length) {
+                // Reset
+                steps.forEach((step, i) => {
+                    step.classList.remove('completed', 'active');
+                    if (i < 2) step.classList.add('completed');
+                    if (i === 2) step.classList.add('active');
+                });
+                currentStep = 2;
+            } else {
+                steps[currentStep].classList.remove('active');
+                steps[currentStep].classList.add('completed');
+                currentStep++;
+                if (currentStep < steps.length) {
+                    steps[currentStep].classList.add('active');
+                }
+            }
+        }
+
+        // Top progress bar
+        function showTopProgress() {
+            const bar = document.getElementById('top-progress');
+            bar.classList.add('active');
+            bar.style.transform = 'scaleX(0)';
+            
+            setTimeout(() => bar.style.transform = 'scaleX(0.3)', 50);
+            setTimeout(() => bar.style.transform = 'scaleX(0.6)', 500);
+            setTimeout(() => bar.style.transform = 'scaleX(0.9)', 1000);
+            setTimeout(() => {
+                bar.classList.add('complete');
+                bar.classList.remove('active');
+                setTimeout(() => {
+                    bar.classList.add('fade-out');
+                    setTimeout(() => {
+                        bar.classList.remove('complete', 'fade-out');
+                        bar.style.transform = 'scaleX(0)';
+                    }, 500);
+                }, 200);
+            }, 1500);
+        }
+
+        // Loading overlay
+        let overlayActive = false;
+        function toggleOverlay() {
+            const container = document.getElementById('overlay-demo');
+            if (!overlayActive) {
+                const overlay = document.createElement('div');
+                overlay.className = 'loading-overlay';
+                overlay.innerHTML = `
+                    <div class="page-transition-spinner" style="width: 40px; height: 40px;"></div>
+                    <div class="loading-overlay-text">Loading content...</div>
+                `;
+                container.appendChild(overlay);
+                overlayActive = true;
+            } else {
+                const overlay = container.querySelector('.loading-overlay');
+                if (overlay) {
+                    overlay.remove();
+                    overlayActive = false;
+                }
+            }
+        }
+
+        // State transitions
+        function triggerTransition(type) {
+            const demo = document.getElementById('transition-demo');
+            demo.style.opacity = '0';
+            demo.style.transform = 'scale(0.9)';
+            
+            setTimeout(() => {
+                demo.classList.remove('fade-enter', 'slide-up-enter', 'slide-down-enter', 'scale-enter');
+                void demo.offsetWidth; // Force reflow
+                
+                demo.style.opacity = '';
+                demo.style.transform = '';
+                
+                switch(type) {
+                    case 'fade':
+                        demo.classList.add('fade-enter');
+                        break;
+                    case 'slide-up':
+                        demo.classList.add('slide-up-enter');
+                        break;
+                    case 'slide-down':
+                        demo.classList.add('slide-down-enter');
+                        break;
+                    case 'scale':
+                        demo.classList.add('scale-enter');
+                        break;
+                }
+            }, 300);
+        }
+    </script>
+</body>
+</html>

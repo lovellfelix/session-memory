@@ -1,31 +1,14 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname } from 'path';
 import { logger } from './logger.js';
 import { ConfigError } from './errors.js';
-
-function resolveDefaultSessionDbPath(): string {
-  if (process.env.SESSION_DB) {
-    return process.env.SESSION_DB;
-  }
-
-  if (process.env.SESSION_DB_PATH) {
-    return process.env.SESSION_DB_PATH;
-  }
-
-  const homeDir = process.env.HOME || process.env.USERPROFILE || '';
-  const canonicalDbPath = join(homeDir, '.agents', 'memory', 'session.db');
-  const legacyDbPath = join(homeDir, '.opencode', 'sessions', 'session.db');
-
-  if (existsSync(canonicalDbPath)) {
-    return canonicalDbPath;
-  }
-
-  if (existsSync(legacyDbPath)) {
-    return legacyDbPath;
-  }
-
-  return canonicalDbPath;
-}
+import {
+  expandHomePath,
+  resolveConfigSavePath,
+  resolveConfigSearchPaths,
+  resolveProjectDbPath,
+  resolveSessionDbPath,
+} from './runtime-paths.js';
 
 /**
  * Storage modes for multi-project support (inspired by Nova Memory)
@@ -128,7 +111,7 @@ const DEFAULT_CONFIG: SessionMemoryConfig = {
   version: '2.0.0',
   storage: {
     mode: 'global',
-    dbPath: resolveDefaultSessionDbPath(),
+    dbPath: resolveSessionDbPath(),
   },
   features: {
     taskManagement: true,
@@ -158,8 +141,8 @@ const DEFAULT_CONFIG: SessionMemoryConfig = {
 };
 
 /**
- * Configuration manager for session-memory
- * Supports project-local (.nova/config.json) and global (~/.opencode/session-memory.json) configs
+ * Configuration manager for session-memory.
+ * Supports portable project-local and user-level config paths, with legacy OpenCode/Nova fallbacks.
  */
 export class ConfigManager {
   private static instance: ConfigManager;
@@ -179,11 +162,7 @@ export class ConfigManager {
   }
 
   private loadConfig(): SessionMemoryConfig {
-    const configLocations = [
-      join(process.cwd(), '.nova', 'config.json'),
-      join(process.cwd(), '.opencode', 'session-memory.json'),
-      join(process.env.HOME || '', '.opencode', 'session-memory.json'),
-    ];
+    const configLocations = resolveConfigSearchPaths();
 
     for (const location of configLocations) {
       if (existsSync(location)) {
@@ -207,12 +186,8 @@ export class ConfigManager {
   private loadFromEnv(): Partial<SessionMemoryConfig> {
     const config: Partial<SessionMemoryConfig> = {};
 
-    if (process.env.SESSION_DB) {
-      config.storage = { ...DEFAULT_CONFIG.storage, dbPath: process.env.SESSION_DB };
-    }
-
-    if (process.env.SESSION_DB_PATH) {
-      config.storage = { ...DEFAULT_CONFIG.storage, dbPath: process.env.SESSION_DB_PATH };
+    if (process.env.SESSION_MEMORY_DB || process.env.SESSION_DB || process.env.SESSION_DB_PATH) {
+      config.storage = { ...DEFAULT_CONFIG.storage, dbPath: resolveSessionDbPath() };
     }
 
     if (process.env.STORAGE_MODE) {
@@ -268,12 +243,10 @@ export class ConfigManager {
     let dbPath = this.config.storage.dbPath;
 
     if (this.config.storage.mode === 'project') {
-      dbPath = join(process.cwd(), '.nova', 'memory.db');
+      dbPath = resolveProjectDbPath();
     }
 
-    if (dbPath.startsWith('~/')) {
-      dbPath = dbPath.replace('~', process.env.HOME || process.env.USERPROFILE || '');
-    }
+    dbPath = expandHomePath(dbPath);
 
     // Ensure directory exists
     const dir = dirname(dbPath);
@@ -297,9 +270,7 @@ export class ConfigManager {
     if (!this.config.storage.multiProject?.enabled) {
       return [];
     }
-    return this.config.storage.multiProject.includePaths.map(p => 
-      p.startsWith('~/') ? p.replace('~', process.env.HOME || '') : p
-    );
+    return this.config.storage.multiProject.includePaths.map(p => expandHomePath(p));
   }
 
   /**
@@ -329,7 +300,7 @@ export class ConfigManager {
    * Save current configuration to file
    */
   saveConfig(path?: string): void {
-    const savePath = path || this.configPath || join(process.env.HOME || '', '.opencode', 'session-memory.json');
+    const savePath = path || this.configPath || resolveConfigSavePath();
     
     try {
       const dir = dirname(savePath);

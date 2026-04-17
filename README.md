@@ -1,6 +1,6 @@
 # MCP Session Memory Server
 
-Note: this document includes historical sections from earlier server revisions. For the current OpenCode helper/runtime surface, treat `tool/mcp.ts` and `tool/mcp/index.ts` as the source of truth.
+This README still contains some historical material from earlier revisions. For the current runtime, treat `src/index.ts`, `src/database.ts`, and `src/runtime-paths.ts` as the source of truth. See `docs/PORTABILITY-RFC.md` for the current portability plan across Pi, OpenCode, and other MCP harnesses.
 
 A Model Context Protocol (MCP) server for persistent session context, user preferences, project conventions, and related indexed state.
 
@@ -50,9 +50,10 @@ The MCP servers are built automatically when you run the dotfiles `bootstrap.sh`
 **What the setup script does:**
 1. Checks for prerequisites (Node.js >= 18, build tools)
 2. Installs npm dependencies
-3. Rebuilds `better-sqlite3` native module for your platform
-4. Compiles TypeScript to JavaScript
-5. Verifies the server can load
+3. Compiles TypeScript to JavaScript
+4. Verifies the server can load
+
+**Runtime note:** the main MCP server uses `sql.js` for portable storage. Some optional helper paths and tests still use `better-sqlite3`; that dependency is not required for the core stdio server.
 
 ### Client Configuration
 
@@ -654,17 +655,17 @@ sudo systemctl status mcp-dashboard
 
 ### Dashboard won't start
 
-1. **Database initialization error (MODULE_VERSION mismatch)**:
+1. **Database initialization error or optional helper mismatch**:
    
-   If you see errors like "Failed to initialize database" or "NODE_MODULE_VERSION mismatch", rebuild better-sqlite3:
+   The core server does not require `better-sqlite3`, but some optional helper paths and legacy tests do. If a helper complains about `NODE_MODULE_VERSION mismatch`, rebuild the optional native dependency:
    ```bash
    npm rebuild better-sqlite3
    ```
    
-   This is automatically done after `npm install` via the postinstall hook, but may be needed if you:
-   - Switch Node.js versions (e.g., via nvm)
+   Typical reasons:
+   - Switch Node.js versions (for example via `nvm` or `volta`)
    - Upgrade Node.js
-   - Copy node_modules from another machine
+   - Copy `node_modules` from another machine
 
 2. **Check if port is in use**:
    ```bash

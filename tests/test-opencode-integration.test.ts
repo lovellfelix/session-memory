@@ -1,799 +1,243 @@
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { createRequire } from 'module';
+import { afterAll, beforeAll, beforeEach, afterEach, describe, expect, it } from '@jest/globals';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import path from 'path';
-import { existsSync, unlinkSync } from 'fs';
+import { fileURLToPath } from 'url';
 
-const require = createRequire(import.meta.url);
-const BetterSqlite3 = (() => {
-  try {
-    return require('better-sqlite3');
-  } catch {
-    return null;
+const MCP_TIMEOUT_MS = 10000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+class McpTestClient {
+  private proc: ChildProcessWithoutNullStreams;
+  private buffer = '';
+  private nextId = 1;
+  private pending = new Map<number, { resolve: (value: any) => void; reject: (error: Error) => void; timeout: NodeJS.Timeout }>();
+  private initialized = false;
+
+  constructor(private readonly env: NodeJS.ProcessEnv) {
+    this.proc = spawn('node', ['--loader', 'ts-node/esm', 'src/index.ts'], {
+      cwd: path.resolve(__dirname, '..'),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        ...env,
+      },
+    });
+
+    this.proc.stdout.on('data', (chunk) => this.onStdout(chunk));
+    this.proc.on('close', () => {
+      for (const [, pending] of this.pending) {
+        clearTimeout(pending.timeout);
+        pending.reject(new Error('MCP server exited during test'));
+      }
+      this.pending.clear();
+    });
   }
-})();
 
-const describeIfBetterSqlite3 = BetterSqlite3 ? describe : describe.skip;
+  private onStdout(chunk: Buffer) {
+    this.buffer += chunk.toString();
+    const lines = this.buffer.split('\n');
+    this.buffer = lines.pop() || '';
 
-/**
- * OpenCode MCP Integration Test Suite
- * 
- * Tests the MCP server integration with OpenCode CLI via:
- * - Direct Node.js import (tool/mcp.ts pattern)
- * - Session database operations
- * - Type safety with TypeScript
- * - Error handling and recovery
- */
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const message = JSON.parse(line);
+      if (typeof message.id !== 'number') continue;
+      const pending = this.pending.get(message.id);
+      if (!pending) continue;
+      this.pending.delete(message.id);
+      clearTimeout(pending.timeout);
+      if (message.error) {
+        pending.reject(new Error(message.error.message || 'MCP request failed'));
+      } else {
+        pending.resolve(message.result);
+      }
+    }
+  }
 
-describeIfBetterSqlite3('OpenCode MCP Integration', () => {
-  let testDbPath: string;
-  let db: any;
+  private async request(method: string, params?: Record<string, unknown>) {
+    const id = this.nextId++;
+    const payload = { jsonrpc: '2.0', id, method, params };
+
+    return new Promise<any>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`Timed out waiting for ${method}`));
+      }, MCP_TIMEOUT_MS);
+
+      this.pending.set(id, { resolve, reject, timeout });
+      this.proc.stdin.write(`${JSON.stringify(payload)}\n`);
+    });
+  }
+
+  async initialize() {
+    if (this.initialized) return;
+    await this.request('initialize', {
+      protocolVersion: '2024-11-05',
+      capabilities: {},
+      clientInfo: { name: 'session-memory-jest', version: '1.0.0' },
+    });
+    this.proc.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} })}\n`);
+    this.initialized = true;
+  }
+
+  async listTools() {
+    await this.initialize();
+    return this.request('tools/list', {});
+  }
+
+  async callTool(name: string, args: Record<string, unknown>) {
+    await this.initialize();
+    return this.request('tools/call', { name, arguments: args });
+  }
+
+  async stop() {
+    await new Promise<void>((resolve) => {
+      if (this.proc.killed || this.proc.exitCode !== null) {
+        resolve();
+        return;
+      }
+      this.proc.once('close', () => resolve());
+      this.proc.kill('SIGTERM');
+    });
+  }
+}
+
+function extractText(result: any): string {
+  return Array.isArray(result?.content)
+    ? result.content.filter((part: any) => part?.type === 'text').map((part: any) => part.text).join('\n')
+    : '';
+}
+
+describe('OpenCode MCP integration', () => {
+  const testRoot = mkdtempSync(path.join(tmpdir(), 'session-memory-open-code-'));
+  const sessionDbPath = path.join(testRoot, 'memory', 'session.db');
+  const opencodeRoot = path.join(testRoot, 'opencode');
+  const piRoot = path.join(testRoot, 'pi-agent');
+  let client: McpTestClient;
 
   beforeAll(() => {
-    // Create isolated test database
-    testDbPath = path.join(process.env.HOME!, '.opencode/sessions/test-opencode-integration.db');
-    if (existsSync(testDbPath)) {
-      unlinkSync(testDbPath);
-    }
+    mkdirSync(path.dirname(sessionDbPath), { recursive: true });
+    mkdirSync(path.join(opencodeRoot, 'assistant_prompts'), { recursive: true });
+    mkdirSync(path.join(opencodeRoot, 'memory'), { recursive: true });
+    mkdirSync(path.join(piRoot, 'prompts'), { recursive: true });
+    mkdirSync(path.join(piRoot, 'memory'), { recursive: true });
 
-    // Initialize test database with schema
-    db = new BetterSqlite3(testDbPath);
-    initializeTestDatabase(db);
+    writeFileSync(path.join(opencodeRoot, 'assistant_prompts', 'modes.md'), '# open modes');
+    writeFileSync(path.join(opencodeRoot, 'memory', 'assistant_rules.md'), 'open rules');
+    writeFileSync(path.join(piRoot, 'prompts', 'plan.md'), '# pi plan');
+    writeFileSync(path.join(piRoot, 'memory', 'user_profile.md'), 'pi profile');
+
+  });
+
+  beforeEach(async () => {
+    client = new McpTestClient({
+      SESSION_MEMORY_DB: sessionDbPath,
+      OPENCODE_CONFIG_ROOT: opencodeRoot,
+      PI_AGENT_ROOT: piRoot,
+      LOG_LEVEL: 'error',
+    });
+
+    await client.initialize();
+  }, 30000);
+
+  afterEach(async () => {
+    await client.stop();
   });
 
   afterAll(() => {
-    db.close();
-    if (existsSync(testDbPath)) {
-      unlinkSync(testDbPath);
-    }
+    rmSync(testRoot, { recursive: true, force: true });
   });
 
-  describe('Tool Availability Detection', () => {
-    it('should detect MCP tools available in environment', async () => {
-      // Simulate tool availability check pattern
-      const hasOpenCodeMcp = typeof (global as any).mcp !== 'undefined' &&
-                             (global as any).mcp.isToolAvailable?.('store_session_context') === true;
+  it('lists the real MCP tools from the running server', async () => {
+    const result = await client.listTools();
+    const toolNames = result.tools.map((tool: any) => tool.name);
 
-      // Environment should support MCP (or gracefully fallback)
-      expect([true, false]).toContain(hasOpenCodeMcp);
-    });
-
-    it('should provide fallback when MCP unavailable', async () => {
-      // Test silent fallback pattern - no throwing errors
-      const mockMcp = {
-        isToolAvailable: (tool: string) => false,
-        callTool: async (_tool: string, _params?: unknown) => { throw new Error('MCP unavailable'); }
-      };
-
-      try {
-        await mockMcp.callTool('store_session_context', {});
-        // Should not reach here
-        expect(true).toBe(false);
-      } catch (error) {
-        // Expected - but in real agents, this is handled silently
-        expect((error as Error).message).toContain('MCP unavailable');
-      }
-    });
+    expect(toolNames).toContain('store_session_context');
+    expect(toolNames).toContain('retrieve_session_context');
+    expect(toolNames).toContain('assemble_active_context');
+    expect(toolNames).toContain('server_health');
   });
 
-  describe('Session Context Storage and Retrieval', () => {
-    it('should store session context in database', () => {
-      const sessionData = {
-        session_id: 'test-workflow-001',
-        context: 'Implementing user authentication with JWT',
-        metadata: JSON.stringify({
-          workflow: 'authentication',
-          phase: 'implementation',
-          language: 'python'
-        })
-      };
+  it('stores and retrieves session context using the real runtime schema', async () => {
+    const sessionId = 'integration-session-001';
 
-      const stmt = db.prepare(`
-        INSERT INTO session_contexts 
-        (session_id, context_key, context_value, metadata, created_at, updated_at)
-        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
-      `);
-      
-      stmt.run(
-        sessionData.session_id,
-        'workflow_state',
-        sessionData.context,
-        sessionData.metadata
-      );
+    const stored = await client.callTool('store_session_context', {
+      session_id: sessionId,
+      context_type: 'workflow',
+      key: 'plan',
+      value: 'Implement portability adapters',
+      metadata: { harness: 'opencode', phase: 'implementation' },
+    });
+    expect(extractText(stored)).toContain('Context stored: plan');
 
-      // Verify stored
-      const getStmt = db.prepare(`
-        SELECT context_value FROM session_contexts 
-        WHERE session_id = ? AND context_key = ?
-      `);
-      
-      const result = getStmt.get(sessionData.session_id, 'workflow_state') as any;
-
-      expect(result).toBeDefined();
-      expect(result.context_value).toBe(sessionData.context);
+    const retrieved = await client.callTool('retrieve_session_context', {
+      session_id: sessionId,
+      context_type: 'workflow',
+      key: 'plan',
     });
 
-    it('should retrieve session context with metadata', () => {
-      const sessionId = 'test-retrieve-001';
-      const testContext = 'Building dashboard with React and TypeScript';
-      const testMetadata = {
-        project: 'dashboard-app',
-        timestamp: new Date().toISOString(),
-        agent: 'ui-coder'
-      };
-
-      // Store
-      const storeStmt = db.prepare(`
-        INSERT INTO session_contexts 
-        (session_id, context_key, context_value, metadata, created_at, updated_at)
-        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
-      `);
-      
-      storeStmt.run(
-        sessionId,
-        'dashboard_build',
-        testContext,
-        JSON.stringify(testMetadata)
-      );
-
-      // Retrieve
-      const getStmt = db.prepare(`
-        SELECT context_value, metadata FROM session_contexts 
-        WHERE session_id = ? AND context_key = ?
-      `);
-      
-      const result = getStmt.get(sessionId, 'dashboard_build') as any;
-
-      expect(result.context_value).toBe(testContext);
-      const metadata = JSON.parse(result.metadata);
-      expect(metadata.project).toBe('dashboard-app');
-      expect(metadata.agent).toBe('ui-coder');
-    });
-
-    it('should update session context without losing history', () => {
-      const sessionId = 'test-update-001';
-      const contextKey = 'workflow_phase';
-
-      // Initial insert
-      const insertStmt = db.prepare(`
-        INSERT INTO session_contexts 
-        (session_id, context_key, context_value, created_at, updated_at)
-        VALUES (?, ?, ?, datetime('now'), datetime('now'))
-      `);
-      
-      insertStmt.run(sessionId, contextKey, 'Phase 1: Planning');
-
-      // Update
-      const updateStmt = db.prepare(`
-        UPDATE session_contexts 
-        SET context_value = ?, updated_at = datetime('now')
-        WHERE session_id = ? AND context_key = ?
-      `);
-      
-      updateStmt.run('Phase 2: Implementation', sessionId, contextKey);
-
-      // Verify update
-      const getStmt = db.prepare(`
-        SELECT context_value, updated_at FROM session_contexts 
-        WHERE session_id = ? AND context_key = ?
-      `);
-      
-      const result = getStmt.get(sessionId, contextKey) as any;
-
-      expect(result.context_value).toBe('Phase 2: Implementation');
-      expect(result.updated_at).toBeDefined();
+    const contexts = JSON.parse(extractText(retrieved));
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0]).toMatchObject({
+      session_id: sessionId,
+      context_type: 'workflow',
+      key: 'plan',
+      value: 'Implement portability adapters',
     });
   });
 
-  describe('User Preference Tracking', () => {
-    it('should store user preference with confidence scoring', () => {
-      const preference = {
-        user_id: 'default',
-        category: 'code_style',
-        preference_key: 'string_quotes',
-        preference_value: 'double',
-        confidence: 0.95
-      };
+  it('returns manifest runtime metadata with adapters and config diagnostics', async () => {
+    const manifest = await client.callTool('get_tool_manifest', { include_schemas: false });
+    const parsed = JSON.parse(extractText(manifest));
 
-      const stmt = db.prepare(`
-        INSERT OR REPLACE INTO user_preferences 
-        (user_id, category, preference_key, preference_value, confidence, updated_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
-      `);
-      
-      stmt.run(
-        preference.user_id,
-        preference.category,
-        preference.preference_key,
-        preference.preference_value,
-        preference.confidence
-      );
+    expect(parsed.server.name).toBe('@lovellfelix/mcp-session-memory');
+    expect(parsed.db.path).toBe(sessionDbPath);
+    expect(parsed.adapters.map((adapter: any) => adapter.kind)).toEqual(['opencode', 'pi']);
+    expect(parsed.runtime.database.path).toBe(sessionDbPath);
+    expect(parsed.runtime.harnesses[0]).toHaveProperty('availablePromptFiles');
+  });
 
-      // Verify
-      const getStmt = db.prepare(`
-        SELECT preference_value, confidence FROM user_preferences 
-        WHERE user_id = ? AND category = ? AND preference_key = ?
-      `);
-      
-      const result = getStmt.get(preference.user_id, preference.category, preference.preference_key) as any;
+  it('reports adapter diagnostics through server_health', async () => {
+    const health = await client.callTool('server_health', { include_stats: true });
+    const parsed = JSON.parse(extractText(health));
 
-      expect(result.preference_value).toBe('double');
-      expect(result.confidence).toBe(0.95);
-    });
-
-    it('should retrieve all user preferences with filtering', () => {
-      const userId = 'test-user-001';
-
-      // Insert multiple preferences
-      const stmts = [
-        db.prepare(`
-          INSERT OR REPLACE INTO user_preferences 
-          (user_id, category, preference_key, preference_value, confidence, updated_at)
-          VALUES (?, ?, ?, ?, ?, datetime('now'))
-        `),
-        db.prepare(`
-          INSERT OR REPLACE INTO user_preferences 
-          (user_id, category, preference_key, preference_value, confidence, updated_at)
-          VALUES (?, ?, ?, ?, ?, datetime('now'))
-        `),
-        db.prepare(`
-          INSERT OR REPLACE INTO user_preferences 
-          (user_id, category, preference_key, preference_value, confidence, updated_at)
-          VALUES (?, ?, ?, ?, ?, datetime('now'))
-        `)
-      ];
-
-      stmts[0].run(userId, 'code_style', 'quotes', 'double', 0.9);
-      stmts[1].run(userId, 'code_style', 'semicolons', 'true', 0.85);
-      stmts[2].run(userId, 'commit_style', 'type_format', 'feat(scope): msg', 0.8);
-
-      // Retrieve all
-      const getStmt = db.prepare(`
-        SELECT category, preference_key, confidence FROM user_preferences 
-        WHERE user_id = ?
-      `);
-      
-      const allPrefs = getStmt.all(userId) as any[];
-
-      expect(allPrefs.length).toBeGreaterThanOrEqual(3);
-
-      // Filter by category
-      const codeStylePrefs = allPrefs.filter(p => p.category === 'code_style');
-      expect(codeStylePrefs.length).toBeGreaterThanOrEqual(2);
-    });
-
-    it('should track confidence score evolution', () => {
-      const userId = 'test-confidence-001';
-      const prefKey = 'trailing_commas';
-
-      // Start with low confidence (initial observation)
-      const insertStmt = db.prepare(`
-        INSERT OR REPLACE INTO user_preferences 
-        (user_id, category, preference_key, preference_value, confidence, updated_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
-      `);
-      
-      insertStmt.run(userId, 'code_style', prefKey, 'true', 0.6);
-
-      const getStmt = db.prepare(`
-        SELECT confidence FROM user_preferences 
-        WHERE user_id = ? AND preference_key = ?
-      `);
-      
-      let result = getStmt.get(userId, prefKey) as any;
-      expect(result.confidence).toBe(0.6);
-
-      // Increase confidence (pattern confirmed)
-      const updateStmt = db.prepare(`
-        UPDATE user_preferences 
-        SET confidence = ?, updated_at = datetime('now')
-        WHERE user_id = ? AND preference_key = ?
-      `);
-      
-      updateStmt.run(0.7, userId, prefKey);
-      result = getStmt.get(userId, prefKey) as any;
-      expect(result.confidence).toBe(0.7);
-
-      // Further confirmation
-      updateStmt.run(0.9, userId, prefKey);
-      result = getStmt.get(userId, prefKey) as any;
-      expect(result.confidence).toBe(0.9);
+    expect(parsed.status).toBe('healthy');
+    expect(parsed.database.path).toBe(sessionDbPath);
+    expect(parsed.adapters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'opencode', promptDirExists: true }),
+        expect.objectContaining({ kind: 'pi', promptDirExists: true }),
+      ]),
+    );
+    expect(parsed.stats).toMatchObject({
+      sessions: expect.any(Object),
+      contexts: expect.any(Object),
+      preferences: expect.any(Object),
     });
   });
 
-  describe('Project Conventions Learning', () => {
-    it('should store project-specific convention', () => {
-      const convention = {
-        project_id: 'test-project',
-        language: 'python',
-        convention_type: 'error_handling',
-        convention_key: 'exception_style',
-        convention_value: 'Result types with Ok/Err pattern'
-      };
-
-      const stmt = db.prepare(`
-        INSERT INTO project_conventions 
-        (project_id, language, convention_type, convention_key, convention_value, created_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
-      `);
-      
-      stmt.run(
-        convention.project_id,
-        convention.language,
-        convention.convention_type,
-        convention.convention_key,
-        convention.convention_value
-      );
-
-      // Verify
-      const getStmt = db.prepare(`
-        SELECT convention_value FROM project_conventions 
-        WHERE project_id = ? AND language = ? AND convention_key = ?
-      `);
-      
-      const result = getStmt.get(convention.project_id, convention.language, convention.convention_key) as any;
-
-      expect(result.convention_value).toBe('Result types with Ok/Err pattern');
+  it('assembles active context from both OpenCode and Pi prompt sources', async () => {
+    const response = await client.callTool('assemble_active_context', {
+      query: 'resume work on the portability plan',
+      session_id: 'integration-session-002',
+      limit: 5,
     });
+    const parsed = JSON.parse(extractText(response));
 
-    it('should retrieve conventions by language', () => {
-      const projectId = 'test-lang-project';
-      const language = 'typescript';
-
-      // Insert multiple conventions for TypeScript
-      const stmt = db.prepare(`
-        INSERT INTO project_conventions 
-        (project_id, language, convention_type, convention_key, convention_value, created_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'))
-      `);
-
-      const conventions = [
-        ['import_style', 'ES6 modules with named imports'],
-        ['testing_framework', 'Jest with describe/it blocks'],
-        ['async_pattern', 'async/await over .then()']
-      ];
-
-      for (const [key, value] of conventions) {
-        stmt.run(projectId, language, 'pattern', key, value);
-      }
-
-      // Retrieve all for language
-      const getStmt = db.prepare(`
-        SELECT convention_key, convention_value FROM project_conventions 
-        WHERE project_id = ? AND language = ?
-      `);
-      
-      const results = getStmt.all(projectId, language) as any[];
-
-      expect(results.length).toBeGreaterThanOrEqual(3);
-      expect(results.map(r => r.convention_key)).toContain('import_style');
-      expect(results.map(r => r.convention_key)).toContain('testing_framework');
-    });
-  });
-
-  describe('Task Board Synchronization', () => {
-    it('should sync todo to task database', () => {
-      const todo = {
-        id: 'task-001',
-        content: 'Implement user authentication',
-        status: 'pending',
-        priority: 'high'
-      };
-
-      // Map todo status to task state
-      const taskState = todo.status === 'pending' ? 'backlog' :
-                       todo.status === 'in_progress' ? 'in_progress' :
-                       'done';
-
-      const stmt = db.prepare(`
-        INSERT INTO tasks 
-        (id, title, state, priority, created_at, updated_at)
-        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
-      `);
-      
-      stmt.run(todo.id, todo.content, taskState, todo.priority);
-
-      // Verify
-      const getStmt = db.prepare(`
-        SELECT state, priority FROM tasks WHERE id = ?
-      `);
-      
-      const result = getStmt.get(todo.id) as any;
-
-      expect(result.state).toBe('backlog');
-      expect(result.priority).toBe('high');
-    });
-
-    it('should update task state transitions', () => {
-      const taskId = 'task-state-001';
-
-      // Create in backlog
-      const createStmt = db.prepare(`
-        INSERT INTO tasks 
-        (id, title, state, priority, created_at, updated_at)
-        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
-      `);
-      
-      createStmt.run(taskId, 'Test task', 'backlog', 'medium');
-
-      // Move to in_progress
-      const updateStmt = db.prepare(`
-        UPDATE tasks 
-        SET state = ?, updated_at = datetime('now')
-        WHERE id = ?
-      `);
-      
-      updateStmt.run('in_progress', taskId);
-
-      const getStmt = db.prepare(`
-        SELECT state FROM tasks WHERE id = ?
-      `);
-      
-      let result = getStmt.get(taskId) as any;
-      expect(result.state).toBe('in_progress');
-
-      // Move to done
-      updateStmt.run('done', taskId);
-      result = getStmt.get(taskId) as any;
-      expect(result.state).toBe('done');
-    });
-
-    it('should build kanban board view', () => {
-      // Insert tasks in different states
-      const stmt = db.prepare(`
-        INSERT INTO tasks 
-        (id, title, state, created_at, updated_at)
-        VALUES (?, ?, ?, datetime('now'), datetime('now'))
-      `);
-
-      const tasks = [
-        ['backlog-1', 'Task 1', 'backlog'],
-        ['inprogress-1', 'Task 2', 'in_progress'],
-        ['inprogress-2', 'Task 3', 'in_progress'],
-        ['done-1', 'Task 4', 'done']
-      ];
-
-      for (const [id, title, state] of tasks) {
-        stmt.run(id, title, state);
-      }
-
-      // Query board view
-      const backlogStmt = db.prepare(`
-        SELECT COUNT(*) as count FROM tasks WHERE state = 'backlog'
-      `);
-      const backlog = backlogStmt.get() as any;
-
-      const inProgressStmt = db.prepare(`
-        SELECT COUNT(*) as count FROM tasks WHERE state = 'in_progress'
-      `);
-      const inProgress = inProgressStmt.get() as any;
-
-      const doneStmt = db.prepare(`
-        SELECT COUNT(*) as count FROM tasks WHERE state = 'done'
-      `);
-      const done = doneStmt.get() as any;
-
-      expect(backlog.count).toBeGreaterThanOrEqual(1);
-      expect(inProgress.count).toBeGreaterThanOrEqual(2);
-      expect(done.count).toBeGreaterThanOrEqual(1);
-    });
-  });
-
-  describe('Error Handling and Recovery', () => {
-    it('should handle database errors gracefully', () => {
-      const getStmt = db.prepare(`
-        SELECT * FROM session_contexts LIMIT 1
-      `);
-      
-      // Should not throw
-      expect(() => {
-        getStmt.get();
-      }).not.toThrow();
-    });
-
-    it('should recover from corrupted context', () => {
-      const sessionId = 'test-corrupt-001';
-
-      // Insert with invalid JSON metadata (simulate corruption)
-      const stmt = db.prepare(`
-        INSERT INTO session_contexts 
-        (session_id, context_key, context_value, metadata, created_at, updated_at)
-        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
-      `);
-      
-      stmt.run(sessionId, 'corrupted', 'value', '{invalid json');
-
-      // Attempt to read - should not crash
-      const getStmt = db.prepare(`
-        SELECT context_value, metadata FROM session_contexts 
-        WHERE session_id = ?
-      `);
-      
-      const result = getStmt.get(sessionId) as any;
-
-      expect(result).toBeDefined();
-      expect(result.context_value).toBe('value');
-
-      // Try to parse metadata - handle error gracefully
-      let metadata: any = null;
-      try {
-        metadata = JSON.parse(result.metadata);
-      } catch (e) {
-        // Expected - corrupted JSON
-        metadata = { error: 'corrupted' };
-      }
-
-      expect(metadata.error).toBe('corrupted');
-    });
-  });
-
-  describe('Cross-Workflow Learning Integration', () => {
-    it('should store routing pattern with confidence', () => {
-      const pattern = {
-        pattern_key: 'fastapi_simple_endpoint',
-        agent_name: 'language-coder',
-        confidence: 0.85,
-        file_count: 1,
-        loc_estimate: 45,
-        metadata: JSON.stringify({
-          framework: 'fastapi',
-          complexity: 'simple',
-          language: 'python'
-        })
-      };
-
-      // Insert pattern
-      const stmt = db.prepare(`
-        INSERT INTO routing_patterns 
-        (pattern_key, agent_name, confidence, file_count, loc_estimate, metadata, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      `);
-      
-      stmt.run(
-        pattern.pattern_key,
-        pattern.agent_name,
-        pattern.confidence,
-        pattern.file_count,
-        pattern.loc_estimate,
-        pattern.metadata
-      );
-
-      // Verify
-      const getStmt = db.prepare(`
-        SELECT agent_name, confidence FROM routing_patterns 
-        WHERE pattern_key = ?
-      `);
-      
-      const result = getStmt.get(pattern.pattern_key) as any;
-
-      expect(result.agent_name).toBe('language-coder');
-      expect(result.confidence).toBe(0.85);
-    });
-
-    it('should filter patterns by confidence threshold', () => {
-      const stmt = db.prepare(`
-        INSERT INTO routing_patterns 
-        (pattern_key, agent_name, confidence, file_count, loc_estimate, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      `);
-
-      const patterns = [
-        ['pattern-1', 'agent-a', 0.95],
-        ['pattern-2', 'agent-b', 0.75],
-        ['pattern-3', 'agent-c', 0.65],
-        ['pattern-4', 'agent-d', 0.88]
-      ];
-
-      for (const [key, agent, conf] of patterns) {
-        stmt.run(key, agent, conf, 1, 50);
-      }
-
-      // Query with confidence >= 0.7
-      const queryStmt = db.prepare(`
-        SELECT pattern_key, confidence FROM routing_patterns 
-        WHERE confidence >= ?
-        ORDER BY confidence DESC
-      `);
-      
-      const highConfidence = queryStmt.all(0.7) as any[];
-
-      const keys = highConfidence.map(p => p.pattern_key);
-      expect(keys).toContain('pattern-1'); // 0.95
-      expect(keys).toContain('pattern-2'); // 0.75
-      expect(keys).toContain('pattern-4'); // 0.88
-      expect(keys).not.toContain('pattern-3'); // 0.65 (below threshold)
-    });
-
-    it('should update pattern confidence on success', () => {
-      const patternKey = 'test-pattern-update';
-
-      // Initial pattern with medium confidence
-      const insertStmt = db.prepare(`
-        INSERT INTO routing_patterns 
-        (pattern_key, agent_name, confidence, file_count, loc_estimate, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      `);
-      
-      insertStmt.run(patternKey, 'test-agent', 0.7, 1, 50);
-
-      // Simulate successful use - increase confidence
-      const updateStmt = db.prepare(`
-        UPDATE routing_patterns 
-        SET confidence = ?, updated_at = datetime('now')
-        WHERE pattern_key = ?
-      `);
-      
-      updateStmt.run(0.75, patternKey);
-
-      const getStmt = db.prepare(`
-        SELECT confidence FROM routing_patterns WHERE pattern_key = ?
-      `);
-      
-      let result = getStmt.get(patternKey) as any;
-      expect(result.confidence).toBe(0.75);
-
-      // Another success
-      updateStmt.run(0.8, patternKey);
-      result = getStmt.get(patternKey) as any;
-      expect(result.confidence).toBe(0.8);
-    });
-  });
-
-  describe('Interaction History Tracking', () => {
-    it('should store interaction with metadata', () => {
-      const interaction = {
-        session_id: 'test-session-001',
-        role: 'user',
-        content: 'Create a FastAPI endpoint for user registration',
-        metadata: JSON.stringify({
-          workflow: 'authentication',
-          task_id: 'auth-001'
-        })
-      };
-
-      const stmt = db.prepare(`
-        INSERT INTO interactions 
-        (session_id, role, content, metadata, created_at)
-        VALUES (?, ?, ?, ?, datetime('now'))
-      `);
-      
-      stmt.run(
-        interaction.session_id,
-        interaction.role,
-        interaction.content,
-        interaction.metadata
-      );
-
-      // Verify
-      const getStmt = db.prepare(`
-        SELECT role, content FROM interactions 
-        WHERE session_id = ?
-      `);
-      
-      const result = getStmt.get(interaction.session_id) as any;
-
-      expect(result.role).toBe('user');
-      expect(result.content).toContain('FastAPI');
-    });
-
-    it('should retrieve interaction history in order', () => {
-      const sessionId = 'test-history-001';
-
-      const stmt = db.prepare(`
-        INSERT INTO interactions 
-        (session_id, role, content, created_at)
-        VALUES (?, ?, ?, datetime('now'))
-      `);
-
-      const interactions = [
-        { role: 'user', content: 'Start authentication workflow' },
-        { role: 'assistant', content: 'Planning authentication flow...' },
-        { role: 'user', content: 'Use JWT tokens' },
-        { role: 'assistant', content: 'Implementing JWT with bcrypt...' }
-      ];
-
-      for (const interaction of interactions) {
-        stmt.run(sessionId, interaction.role, interaction.content);
-      }
-
-      // Retrieve in order
-      const getStmt = db.prepare(`
-        SELECT role, content FROM interactions 
-        WHERE session_id = ?
-        ORDER BY created_at ASC
-      `);
-      
-      const history = getStmt.all(sessionId) as any[];
-
-      expect(history.length).toBe(4);
-      expect(history[0].role).toBe('user');
-      expect(history[1].role).toBe('assistant');
-      expect(history[history.length - 1].content).toContain('JWT');
-    });
+    expect(parsed.prompt_modules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: 'opencode', name: 'modes.md', content: '# open modes' }),
+        expect.objectContaining({ source: 'pi', name: 'plan.md', content: '# pi plan' }),
+      ]),
+    );
+    expect(parsed.curated_markdown).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: 'opencode', name: 'assistant_rules.md', content: 'open rules' }),
+        expect.objectContaining({ source: 'pi', name: 'user_profile.md', content: 'pi profile' }),
+      ]),
+    );
   });
 });
-
-/**
- * Initialize test database with schema
- */
-function initializeTestDatabase(db: Database.Database): void {
-  // Session contexts
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS session_contexts (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id TEXT NOT NULL,
-      context_key TEXT NOT NULL,
-      context_value TEXT,
-      metadata TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(session_id, context_key)
-    )
-  `);
-
-  // User preferences
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS user_preferences (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id TEXT NOT NULL DEFAULT 'default',
-      category TEXT NOT NULL,
-      preference_key TEXT NOT NULL,
-      preference_value TEXT NOT NULL,
-      confidence REAL DEFAULT 0.8,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(user_id, category, preference_key)
-    )
-  `);
-
-  // Project conventions
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS project_conventions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      project_id TEXT NOT NULL,
-      language TEXT NOT NULL,
-      convention_type TEXT NOT NULL,
-      convention_key TEXT NOT NULL,
-      convention_value TEXT NOT NULL,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(project_id, language, convention_key)
-    )
-  `);
-
-  // Tasks
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS tasks (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      state TEXT DEFAULT 'backlog',
-      priority TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // Routing patterns
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS routing_patterns (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      pattern_key TEXT NOT NULL UNIQUE,
-      agent_name TEXT NOT NULL,
-      confidence REAL DEFAULT 0.5,
-      file_count INTEGER DEFAULT 0,
-      loc_estimate INTEGER DEFAULT 0,
-      metadata TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // Interactions
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS interactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id TEXT NOT NULL,
-      role TEXT NOT NULL,
-      content TEXT NOT NULL,
-      metadata TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-}

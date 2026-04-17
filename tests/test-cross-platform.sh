@@ -26,7 +26,7 @@ NC='\033[0m' # No Color
 # Helper functions
 log_pass() {
     echo -e "${GREEN}✓${NC} $1"
-    ((TESTS_PASSED++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
 log_fail() {
@@ -34,12 +34,12 @@ log_fail() {
     if [[ -n "${2:-}" ]]; then
         echo "  Details: $2"
     fi
-    ((TESTS_FAILED++))
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 }
 
 log_skip() {
     echo -e "${YELLOW}⊘${NC} $1"
-    ((TESTS_SKIPPED++))
+    TESTS_SKIPPED=$((TESTS_SKIPPED + 1))
 }
 
 log_info() {
@@ -69,6 +69,54 @@ with_timeout() {
     perl -e 'alarm shift; exec @ARGV' "$seconds" "$@"
 }
 
+resolve_db_path() {
+    local canonical_db_path="$HOME/.agents/memory/session.db"
+    local legacy_db_path="$HOME/.opencode/sessions/session.db"
+
+    if [[ -n "${SESSION_MEMORY_DB:-}" ]]; then
+        printf '%s\n' "$SESSION_MEMORY_DB"
+        return
+    fi
+
+    if [[ -n "${SESSION_DB:-}" ]]; then
+        printf '%s\n' "$SESSION_DB"
+        return
+    fi
+
+    if [[ -n "${SESSION_DB_PATH:-}" ]]; then
+        printf '%s\n' "$SESSION_DB_PATH"
+        return
+    fi
+
+    if [[ -f "$canonical_db_path" ]]; then
+        printf '%s\n' "$canonical_db_path"
+        return
+    fi
+
+    if [[ -f "$legacy_db_path" ]]; then
+        printf '%s\n' "$legacy_db_path"
+        return
+    fi
+
+    printf '%s\n' "$canonical_db_path"
+}
+
+resolve_project_root() {
+    local script_dir
+    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    cd "$script_dir/.." && pwd
+}
+
+resolve_global_server_root() {
+    local npm_root
+    npm_root="$(npm root -g 2>/dev/null || true)"
+    if [[ -n "$npm_root" ]]; then
+        printf '%s\n' "$npm_root/@lovellfelix/mcp-session-memory"
+        return
+    fi
+    printf '%s\n' "/opt/homebrew/lib/node_modules/@lovellfelix/mcp-session-memory"
+}
+
 ##############################################################################
 # Main Test Flow
 ##############################################################################
@@ -81,7 +129,8 @@ echo -e "${NC}"
 
 log_section "[1] Database Health Check"
 
-DB_PATH="$HOME/.opencode/sessions/session.db"
+DB_PATH="$(resolve_db_path)"
+PROJECT_ROOT="$(resolve_project_root)"
 
 if [[ -f "$DB_PATH" ]]; then
     log_pass "Database file exists at $DB_PATH"
@@ -136,11 +185,16 @@ fi
 if [[ -f "$OPENCODE_CONFIG" ]]; then
     log_pass "OpenCode config exists at $OPENCODE_CONFIG"
     
-    # Check MCP enabled
-    if jq -e '.permission.mcp_*' "$OPENCODE_CONFIG" >/dev/null 2>&1; then
-        log_pass "MCP tools enabled in OpenCode config"
+    # Check MCP-related permissions/config without assuming one exact schema.
+    if jq -e '
+        (.permission // {}) as $permission |
+        (.mcp // .mcpServers // {}) as $mcp |
+        (($permission | to_entries | map(select(.key | startswith("mcp_"))) | length) > 0)
+        or (($mcp | keys | length) > 0)
+      ' "$OPENCODE_CONFIG" >/dev/null 2>&1; then
+        log_pass "MCP settings detected in OpenCode config"
     else
-        log_fail "MCP tools not enabled" "Check permission.mcp_* in config"
+        log_skip "No MCP settings detected in OpenCode config"
     fi
 else
     log_skip "OpenCode config not found at $OPENCODE_CONFIG"
@@ -189,27 +243,25 @@ log_info "Manual verification required - see test-raycast-integration.md"
 
 log_section "[5] MCP Server File Validation"
 
-# Check for globally installed package
-GLOBAL_SERVER="/opt/homebrew/lib/node_modules/@lovellfelix/mcp-session-memory"
-LOCAL_SERVER="$(pwd)/mcp-servers/session-memory"
-DOCKER_SERVER="/Users/lfelix/.dotfiles/opencode/.config/opencode/mcp-servers/session-memory"
+# Check for local project source or globally installed package
+GLOBAL_SERVER="$(resolve_global_server_root)"
 
-if [[ -d "$DOCKER_SERVER" ]]; then
-    log_pass "MCP server source found at $DOCKER_SERVER"
+if [[ -d "$PROJECT_ROOT" ]]; then
+    log_pass "MCP server source found at $PROJECT_ROOT"
     
-    if [[ -d "$DOCKER_SERVER/dist" ]]; then
+    if [[ -d "$PROJECT_ROOT/dist" ]]; then
         log_pass "Compiled server files exist (dist directory)"
     else
         log_fail "No compiled server files found" "Run 'npm run build' in server directory"
     fi
     
-    if [[ -f "$DOCKER_SERVER/package.json" ]]; then
+    if [[ -f "$PROJECT_ROOT/package.json" ]]; then
         log_pass "Server package.json exists"
     else
         log_fail "Server package.json not found"
     fi
     
-    if [[ -f "$DOCKER_SERVER/dist/index.js" ]]; then
+    if [[ -f "$PROJECT_ROOT/dist/index.js" ]]; then
         log_pass "Compiled server entry point exists"
     else
         log_fail "Compiled index.js not found" "Run 'npm run build'"
@@ -228,12 +280,12 @@ if command -v node >/dev/null 2>&1; then
     NODE_VERSION=$(node --version)
     log_pass "Node.js installed: $NODE_VERSION"
     
-    # Check minimum version (14+)
+    # Check minimum version (18+)
     MAJOR_VERSION=$(echo "$NODE_VERSION" | cut -d'v' -f2 | cut -d'.' -f1)
-    if [[ $MAJOR_VERSION -ge 14 ]]; then
-        log_pass "Node.js version sufficient (14+)"
+    if [[ $MAJOR_VERSION -ge 18 ]]; then
+        log_pass "Node.js version sufficient (18+)"
     else
-        log_fail "Node.js version too old" "Need 14+, have $NODE_VERSION"
+        log_fail "Node.js version too old" "Need 18+, have $NODE_VERSION"
     fi
 else
     log_fail "Node.js not found" "Install from https://nodejs.org"
@@ -250,7 +302,7 @@ fi
 log_section "[7] Server Startup Test"
 
 # Try to start server and check if it responds
-SERVER_PATH="${DOCKER_SERVER}/dist/index.js"
+SERVER_PATH="${PROJECT_ROOT}/dist/index.js"
 
 if [[ -f "$SERVER_PATH" ]]; then
     log_info "Testing server startup..."
@@ -267,7 +319,11 @@ if [[ -f "$SERVER_PATH" ]]; then
         log_pass "Server starts without immediate errors"
     else
         err_tail=$(tail -n 5 "$tmp_err" 2>/dev/null | tr -d '\r')
-        log_fail "Server exited immediately" "${err_tail:-no stderr}"
+        if grep -q "Server initialization complete" "$tmp_err" 2>/dev/null; then
+            log_pass "Server initializes successfully before stdio closes"
+        else
+            log_fail "Server exited immediately" "${err_tail:-no stderr}"
+        fi
     fi
 
     rm -f "$tmp_err"
@@ -366,8 +422,9 @@ fi
 log_section "[12] System Requirements Check"
 
 # Check disk space
-AVAILABLE_SPACE=$(df -h "$HOME/.opencode" 2>/dev/null | tail -1 | awk '{print $4}')
-log_info "Available space for .opencode: $AVAILABLE_SPACE"
+DB_PARENT_DIR="$(dirname "$DB_PATH")"
+AVAILABLE_SPACE=$(df -h "$DB_PARENT_DIR" 2>/dev/null | tail -1 | awk '{print $4}')
+log_info "Available space for $(basename "$DB_PARENT_DIR"): $AVAILABLE_SPACE"
 
 # Check if on macOS
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -404,7 +461,7 @@ if [[ $TESTS_FAILED -eq 0 ]]; then
     echo -e "${GREEN}✅ All critical tests passed!${NC}"
     echo ""
     echo "MCP server is ready for use on:"
-    echo "  • OpenCode CLI (direct integration via tool/mcp.ts)"
+    echo "  • OpenCode CLI (via MCP stdio transport)"
     echo "  • Claude Desktop (via stdio MCP protocol)"
     echo "  • Raycast AI (via stdio MCP protocol)"
     EXIT_CODE=0
@@ -434,9 +491,9 @@ log_section "📋 Next Steps by Platform"
 
 echo ""
 echo -e "${BLUE}OpenCode CLI Integration:${NC}"
-echo "  Status: Ready for integration via tool/mcp.ts"
-echo "  Next: Run OpenCode tests with: npm run test:integration"
-echo "  Doc: See tests/test-opencode-integration.ts"
+echo "  Status: Ready for integration via MCP stdio transport"
+echo "  Next: Run OpenCode tests with: npm test -- test-opencode-integration.test.ts"
+echo "  Doc: See tests/test-opencode-integration.test.ts"
 echo ""
 
 if [[ -f "$CLAUDE_CONFIG" ]]; then

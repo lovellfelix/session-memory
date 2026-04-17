@@ -1,6 +1,7 @@
 import { createHash, randomBytes, createCipheriv, createDecipheriv } from "crypto";
 import { logger } from "./logger.js";
 import { performanceTracker } from "./performance.js";
+import { resolveEncryptionKeyPath } from "./runtime-paths.js";
 
 /**
  * Encryption utilities for sensitive session data
@@ -25,10 +26,10 @@ export class EncryptionManager {
     if (!keySource) {
       // Generate or read a secure random key from file
       const { existsSync, readFileSync, writeFileSync, mkdirSync } = require('fs');
-      const { join, dirname } = require('path');
+      const { dirname } = require('path');
       
-      const keyDir = join(process.env.HOME || process.env.USERPROFILE || '', '.opencode', 'sessions');
-      const keyPath = join(keyDir, '.encryption-key');
+      const keyPath = resolveEncryptionKeyPath();
+      const keyDir = dirname(keyPath);
       
       if (existsSync(keyPath)) {
         // Read existing key

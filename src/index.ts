@@ -13,32 +13,13 @@ import { logger } from "./logger.js";
 import { performanceTracker } from "./performance.js";
 import { apiParser } from "./api-parser.js";
 import { handleError } from "./errors.js";
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
-
-const HOME_DIR = process.env.HOME || process.env.USERPROFILE || "";
-const CANONICAL_SESSION_DB_PATH = `${HOME_DIR}/.agents/memory/session.db`;
-const LEGACY_SESSION_DB_PATH = `${HOME_DIR}/.opencode/sessions/session.db`;
-
-function resolveSessionDbPath(): string {
-  if (process.env.SESSION_DB) {
-    return process.env.SESSION_DB;
-  }
-
-  if (process.env.SESSION_DB_PATH) {
-    return process.env.SESSION_DB_PATH;
-  }
-
-  if (existsSync(CANONICAL_SESSION_DB_PATH)) {
-    return CANONICAL_SESSION_DB_PATH;
-  }
-
-  if (existsSync(LEGACY_SESSION_DB_PATH)) {
-    return LEGACY_SESSION_DB_PATH;
-  }
-
-  return CANONICAL_SESSION_DB_PATH;
-}
+import { readFileSync } from "fs";
+import {
+  collectContextArtifacts,
+  getHarnessAdapters,
+  getRuntimeDiagnostics,
+} from "./harness-adapters.js";
+import { resolveSessionDbPath } from "./runtime-paths.js";
 
 const SESSION_DB_PATH = resolveSessionDbPath();
 const ENABLE_DASHBOARD = process.env.ENABLE_DASHBOARD === "true";
@@ -46,6 +27,36 @@ const DASHBOARD_PORT = Number.isNaN(Number(process.env.DASHBOARD_PORT))
   ? 3000
   : parseInt(process.env.DASHBOARD_PORT as string, 10);
 const DASHBOARD_HOST = process.env.DASHBOARD_HOST || "localhost";
+const PROMPT_MODULE_FILENAMES = [
+  "system_prompt.md",
+  "reasoning_framework.md",
+  "response_style.md",
+  "user_context.md",
+  "modes.md",
+  "quality_gate.md",
+  "plan.md",
+  "workflow.md",
+  "implement.md",
+  "review-code.md",
+] as const;
+const CURATED_CONTEXT_FILENAMES = [
+  "assistant_rules.md",
+  "user_profile.md",
+  "work_preferences.md",
+  "family_context.md",
+] as const;
+
+function normalizeMetadata(metadata: unknown): string | undefined {
+  if (metadata === undefined || metadata === null) {
+    return undefined;
+  }
+
+  if (typeof metadata === "string") {
+    return metadata;
+  }
+
+  return JSON.stringify(metadata);
+}
 
 class SessionMemoryServer {
   private server: Server;
@@ -1492,6 +1503,7 @@ class SessionMemoryServer {
             const { inputSchema, ...rest } = t;
             return rest;
           });
+          const runtime = getRuntimeDiagnostics(PROMPT_MODULE_FILENAMES, CURATED_CONTEXT_FILENAMES);
           endTimer();
           return {
             content: [
@@ -1502,6 +1514,8 @@ class SessionMemoryServer {
                     ok: true,
                     server: { name: "@lovellfelix/mcp-session-memory", version: "2.0.0" },
                     db: { path: SESSION_DB_PATH },
+                    adapters: getHarnessAdapters(),
+                    runtime,
                     tools,
                   },
                   null,
@@ -1531,7 +1545,7 @@ class SessionMemoryServer {
             contextType,
             key,
             value,
-            args.metadata
+            normalizeMetadata(args.metadata)
           );
           endTimer();
           logger.logToolCall(name, { session_id: args.session_id, key }, Date.now(), true);
@@ -1579,7 +1593,7 @@ class SessionMemoryServer {
             args.context_type,
             args.key,
             args.additional_value,
-            args.metadata
+            normalizeMetadata(args.metadata)
           );
           endTimer();
           logger.logToolCall(name, { session_id: args.session_id, key: args.key }, Date.now(), true);
@@ -1711,7 +1725,7 @@ class SessionMemoryServer {
             args.session_id,
             args.role,
             args.content,
-            args.metadata
+            normalizeMetadata(args.metadata)
           );
           endTimer();
           logger.logToolCall(name, { session_id: args.session_id, role: args.role }, Date.now(), true);
@@ -2123,7 +2137,7 @@ class SessionMemoryServer {
             args.confidence,
             args.file_count || 0,
             args.loc_estimate || 0,
-            args.metadata
+            normalizeMetadata(args.metadata)
           );
           endTimer();
           logger.logToolCall(name, { pattern_key: args.pattern_key }, Date.now(), true);
@@ -2536,6 +2550,7 @@ class SessionMemoryServer {
           if (args.include_stats) {
             healthStats = this.db.getStats();
           }
+          const runtimeDiagnostics = getRuntimeDiagnostics(PROMPT_MODULE_FILENAMES, CURATED_CONTEXT_FILENAMES);
           endTimer();
           logger.logToolCall(name, { healthy: isHealthy }, Date.now(), true);
           return {
@@ -2547,8 +2562,11 @@ class SessionMemoryServer {
                   timestamp: new Date().toISOString(),
                   database: {
                     connected: isHealthy,
-                    path: process.env.SESSION_DB || "default"
+                    path: SESSION_DB_PATH,
+                    memory_home: runtimeDiagnostics.database.memoryHome,
                   },
+                  adapters: runtimeDiagnostics.harnesses,
+                  config: runtimeDiagnostics.config,
                   stats: healthStats
                 }, null, 2),
               },
@@ -2757,32 +2775,10 @@ class SessionMemoryServer {
         }
 
         case "assemble_active_context": {
-          const opencodeRoot = process.env.OPENCODE_CONFIG_ROOT || `${process.env.HOME}/.config/opencode`;
-          const moduleDir = join(opencodeRoot, 'assistant_prompts');
-          const memoryDir = join(opencodeRoot, 'memory');
-          const moduleOrder = [
-            'system_prompt.md',
-            'reasoning_framework.md',
-            'response_style.md',
-            'user_context.md',
-            'modes.md',
-            'quality_gate.md',
-          ];
-
-          const readFileSafe = (path: string): string => {
-            if (!existsSync(path)) return '';
-            return readFileSync(path, 'utf-8');
-          };
-
-          const promptModules = moduleOrder
-            .map((entry) => ({ name: entry, content: readFileSafe(join(moduleDir, entry)) }))
-            .filter((entry) => entry.content.trim().length > 0);
-
-          const curatedFiles = ['assistant_rules.md', 'user_profile.md', 'work_preferences.md', 'family_context.md'];
-          const curatedContext = curatedFiles
-            .map((entry) => ({ name: entry, content: readFileSafe(join(memoryDir, entry)) }))
-            .filter((entry) => entry.content.trim().length > 0);
-
+          const { promptModules, curatedMarkdown } = collectContextArtifacts(
+            PROMPT_MODULE_FILENAMES,
+            CURATED_CONTEXT_FILENAMES,
+          );
           const queryText = `${args.query || ''} ${args.mode || ''}`.trim();
           const relevantMemory = queryText ? this.db.queryMemory(queryText, args.limit || 8) : [];
           const sessionData = args.session_id
@@ -2794,7 +2790,7 @@ class SessionMemoryServer {
             mode: args.mode || 'default',
             strategy: 'relevance-filtered',
             prompt_modules: promptModules,
-            curated_markdown: curatedContext,
+            curated_markdown: curatedMarkdown,
             sqlite_memory: relevantMemory,
             session_data: sessionData,
             note: 'Only relevance-filtered context is returned; full DB is never injected.',

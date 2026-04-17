@@ -14,7 +14,7 @@ const config: Config = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 30000,
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', { useESM: true, isolatedModules: true }]
+    '^.+\\.tsx?$': ['ts-jest', { useESM: true }]
   },
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {

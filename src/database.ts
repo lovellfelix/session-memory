@@ -687,6 +687,39 @@ export class SessionDatabase {
         updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
       );
 
+      CREATE TABLE IF NOT EXISTS artifact_reads (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        artifact_path TEXT NOT NULL,
+        artifact_type TEXT,
+        project_id TEXT,
+        session_id TEXT,
+        harness TEXT,
+        query TEXT,
+        score REAL,
+        metadata TEXT,
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      );
+
+      CREATE TABLE IF NOT EXISTS autodream_runs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        session_id TEXT NOT NULL,
+        project TEXT,
+        topic TEXT,
+        mode TEXT NOT NULL DEFAULT 'report',
+        schema_version INTEGER NOT NULL DEFAULT 2,
+        total_rows_analyzed INTEGER,
+        high_signal_count INTEGER,
+        mean_score REAL,
+        max_score REAL,
+        bucket_decisions INTEGER DEFAULT 0,
+        bucket_blockers INTEGER DEFAULT 0,
+        bucket_next_actions INTEGER DEFAULT 0,
+        bucket_learnings INTEGER DEFAULT 0,
+        artifacts_created INTEGER DEFAULT 0,
+        duration_ms INTEGER,
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      );
+
       CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status, priority);
       CREATE INDEX IF NOT EXISTS idx_operational_tasks_status ON operational_tasks(status, priority);
       CREATE INDEX IF NOT EXISTS idx_operational_tasks_due ON operational_tasks(due_at);
@@ -694,6 +727,11 @@ export class SessionDatabase {
       CREATE INDEX IF NOT EXISTS idx_open_loops_last_seen ON open_loops(last_seen_at);
       CREATE INDEX IF NOT EXISTS idx_reminders_due ON reminders(status, due_at);
       CREATE INDEX IF NOT EXISTS idx_artifacts_project ON artifacts(project_id, status);
+      CREATE INDEX IF NOT EXISTS idx_artifact_reads_path ON artifact_reads(artifact_path, created_at);
+      CREATE INDEX IF NOT EXISTS idx_artifact_reads_project ON artifact_reads(project_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_artifact_reads_session ON artifact_reads(session_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_autodream_runs_session ON autodream_runs(session_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_autodream_runs_project ON autodream_runs(project, created_at);
     `);
 
     // Routing patterns table
@@ -1432,10 +1470,130 @@ export class SessionDatabase {
       conventions: this.db.prepare(`SELECT COUNT(*) as count FROM project_conventions`).get(),
       interactions: this.db.prepare(`SELECT COUNT(*) as count FROM interactions`).get(),
       tasks: this.db.prepare(`SELECT COUNT(*) as count FROM tasks`).get(),
-      routingPatterns: this.db.prepare(`SELECT COUNT(*) as count FROM routing_patterns`).get()
+      routingPatterns: this.db.prepare(`SELECT COUNT(*) as count FROM routing_patterns`).get(),
+      artifactReads: this.db.prepare(`SELECT COUNT(*) as count FROM artifact_reads`).get(),
+      autodreamRuns: this.db.prepare(`SELECT COUNT(*) as count FROM autodream_runs`).get(),
     };
 
     return stats;
+  }
+
+  getIntegrityStatus(): { ok: boolean; result: string[] } {
+    try {
+      const row = this.db.prepare(`PRAGMA integrity_check`).get() as Record<string, unknown> | undefined;
+      const firstValue = row ? Object.values(row)[0] : undefined;
+      const result = firstValue === undefined ? [] : [String(firstValue)];
+      return {
+        ok: result.length > 0 && result.every((entry) => entry.toLowerCase() === 'ok'),
+        result,
+      };
+    } catch (error) {
+      logger.error('Integrity check failed', error as Error);
+      return {
+        ok: false,
+        result: [(error as Error).message],
+      };
+    }
+  }
+
+  recordArtifactRead(input: {
+    artifactPath: string;
+    artifactType?: string;
+    projectId?: string;
+    sessionId?: string;
+    harness?: string;
+    query?: string;
+    score?: number;
+    metadata?: string;
+  }): number {
+    this.validateRequiredString(input.artifactPath, 'artifactPath');
+
+    const stmt = this.db.prepare(`
+      INSERT INTO artifact_reads (
+        artifact_path,
+        artifact_type,
+        project_id,
+        session_id,
+        harness,
+        query,
+        score,
+        metadata,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+    `);
+
+    stmt.run(
+      this.sanitizeInput(input.artifactPath),
+      input.artifactType ? this.sanitizeInput(input.artifactType) : null,
+      input.projectId ? this.sanitizeInput(input.projectId) : null,
+      input.sessionId ? this.sanitizeInput(input.sessionId) : null,
+      input.harness ? this.sanitizeInput(input.harness) : null,
+      input.query ? this.sanitizeInput(input.query) : null,
+      typeof input.score === 'number' ? input.score : null,
+      input.metadata || null,
+    );
+
+    const idRow = this.db.prepare(`SELECT last_insert_rowid() AS id`).get() as { id?: number } | undefined;
+    const insertedId = Number(idRow?.id ?? 0);
+    logger.debug('Artifact read recorded', { artifactPath: input.artifactPath, insertedId });
+    return insertedId;
+  }
+
+  getArtifactReads(filters: {
+    projectId?: string;
+    sessionId?: string;
+    harness?: string;
+    artifactPath?: string;
+    limit?: number;
+  }): any[] {
+    let sql = `SELECT * FROM artifact_reads WHERE 1=1`;
+    const params: any[] = [];
+
+    if (filters.projectId) {
+      sql += ` AND project_id = ?`;
+      params.push(this.sanitizeInput(filters.projectId));
+    }
+    if (filters.sessionId) {
+      sql += ` AND session_id = ?`;
+      params.push(this.sanitizeInput(filters.sessionId));
+    }
+    if (filters.harness) {
+      sql += ` AND harness = ?`;
+      params.push(this.sanitizeInput(filters.harness));
+    }
+    if (filters.artifactPath) {
+      sql += ` AND artifact_path = ?`;
+      params.push(this.sanitizeInput(filters.artifactPath));
+    }
+
+    sql += ` ORDER BY created_at DESC LIMIT ?`;
+    params.push(filters.limit || 20);
+
+    return this.db.prepare(sql).all(...params);
+  }
+
+  getAutodreamMetrics(filters: {
+    project?: string;
+    sessionId?: string;
+    limit?: number;
+  }): any[] {
+    let sql = `SELECT * FROM autodream_runs WHERE 1=1`;
+    const params: any[] = [];
+
+    if (filters.project) {
+      sql += ` AND project = ?`;
+      params.push(this.sanitizeInput(filters.project));
+    }
+    if (filters.sessionId) {
+      sql += ` AND session_id = ?`;
+      params.push(this.sanitizeInput(filters.sessionId));
+    }
+
+    sql += ` ORDER BY created_at DESC LIMIT ?`;
+    params.push(filters.limit || 20);
+
+    return this.db.prepare(sql).all(...params);
   }
 
   // Method aliases for backward compatibility

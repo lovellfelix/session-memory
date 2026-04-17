@@ -27,6 +27,7 @@ class McpTestClient {
     });
 
     this.proc.stdout.on('data', (chunk) => this.onStdout(chunk));
+    this.proc.stderr.on('data', () => {});
     this.proc.on('close', () => {
       for (const [, pending] of this.pending) {
         clearTimeout(pending.timeout);
@@ -159,6 +160,9 @@ describe('OpenCode MCP integration', () => {
     expect(toolNames).toContain('retrieve_session_context');
     expect(toolNames).toContain('assemble_active_context');
     expect(toolNames).toContain('server_health');
+    expect(toolNames).toContain('record_artifact_read');
+    expect(toolNames).toContain('get_artifact_reads');
+    expect(toolNames).toContain('get_autodream_metrics');
   });
 
   it('stores and retrieves session context using the real runtime schema', async () => {
@@ -201,11 +205,12 @@ describe('OpenCode MCP integration', () => {
   });
 
   it('reports adapter diagnostics through server_health', async () => {
-    const health = await client.callTool('server_health', { include_stats: true });
+    const health = await client.callTool('server_health', { include_stats: true, include_integrity: true });
     const parsed = JSON.parse(extractText(health));
 
     expect(parsed.status).toBe('healthy');
     expect(parsed.database.path).toBe(sessionDbPath);
+    expect(parsed.integrity).toMatchObject({ ok: true });
     expect(parsed.adapters).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ kind: 'opencode', promptDirExists: true }),
@@ -216,6 +221,8 @@ describe('OpenCode MCP integration', () => {
       sessions: expect.any(Object),
       contexts: expect.any(Object),
       preferences: expect.any(Object),
+      artifactReads: expect.any(Object),
+      autodreamRuns: expect.any(Object),
     });
   });
 
@@ -239,5 +246,44 @@ describe('OpenCode MCP integration', () => {
         expect.objectContaining({ source: 'pi', name: 'user_profile.md', content: 'pi profile' }),
       ]),
     );
+  });
+
+  it('records durable artifact reads and exposes autodream metrics queries', async () => {
+    const stored = await client.callTool('record_artifact_read', {
+      artifact_path: '/tmp/test-artifact.md',
+      artifact_type: 'project-memory',
+      project_id: 'dotfiles',
+      session_id: 'integration-session-003',
+      harness: 'pi',
+      query: 'resume dotfiles memory',
+      score: 9.5,
+      metadata: { source: 'jest' },
+    });
+    expect(extractText(stored)).toContain('Artifact read recorded:');
+
+    const reads = await client.callTool('get_artifact_reads', {
+      project_id: 'dotfiles',
+      session_id: 'integration-session-003',
+      harness: 'pi',
+    });
+    const parsedReads = JSON.parse(extractText(reads));
+    expect(parsedReads).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifact_path: '/tmp/test-artifact.md',
+          artifact_type: 'project-memory',
+          project_id: 'dotfiles',
+          session_id: 'integration-session-003',
+          harness: 'pi',
+        }),
+      ]),
+    );
+
+    const metrics = await client.callTool('get_autodream_metrics', {
+      project: 'dotfiles',
+      session_id: 'integration-session-003',
+      limit: 5,
+    });
+    expect(JSON.parse(extractText(metrics))).toEqual([]);
   });
 });

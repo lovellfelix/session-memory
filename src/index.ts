@@ -1199,6 +1199,54 @@ class SessionMemoryServer {
               type: "boolean",
               description: "Include database statistics (default: false)",
             },
+            include_integrity: {
+              type: "boolean",
+              description: "Run PRAGMA integrity_check and include the result (default: false)",
+            },
+          },
+        },
+      },
+      {
+        name: "record_artifact_read",
+        description: "Record that a durable on-disk memory artifact was injected or consulted",
+        inputSchema: {
+          type: "object",
+          properties: {
+            artifact_path: { type: "string", description: "Absolute or canonical artifact path" },
+            artifact_type: { type: "string", description: "Artifact kind (memory,current,decisions,handoff,promoted,project-artifact)" },
+            project_id: { type: "string", description: "Optional project slug" },
+            session_id: { type: "string", description: "Optional session identifier" },
+            harness: { type: "string", description: "Harness name, e.g. pi or opencode" },
+            query: { type: "string", description: "Prompt/query that caused the artifact lookup" },
+            score: { type: "number", description: "Optional retrieval score used for ranking" },
+            metadata: { type: "object", description: "Optional structured metadata" },
+          },
+          required: ["artifact_path"],
+        },
+      },
+      {
+        name: "get_artifact_reads",
+        description: "List recently read durable memory artifacts for feedback and ranking",
+        inputSchema: {
+          type: "object",
+          properties: {
+            project_id: { type: "string", description: "Optional project slug filter" },
+            session_id: { type: "string", description: "Optional session filter" },
+            harness: { type: "string", description: "Optional harness filter" },
+            artifact_path: { type: "string", description: "Optional exact artifact path filter" },
+            limit: { type: "number", description: "Maximum results (default: 20)" },
+          },
+        },
+      },
+      {
+        name: "get_autodream_metrics",
+        description: "List recent autodream runs recorded in the session-memory database",
+        inputSchema: {
+          type: "object",
+          properties: {
+            project: { type: "string", description: "Optional project slug filter" },
+            session_id: { type: "string", description: "Optional session filter" },
+            limit: { type: "number", description: "Maximum results (default: 20)" },
           },
         },
       },
@@ -2550,21 +2598,23 @@ class SessionMemoryServer {
           if (args.include_stats) {
             healthStats = this.db.getStats();
           }
+          const integrity = args.include_integrity ? this.db.getIntegrityStatus() : null;
           const runtimeDiagnostics = getRuntimeDiagnostics(PROMPT_MODULE_FILENAMES, CURATED_CONTEXT_FILENAMES);
           endTimer();
-          logger.logToolCall(name, { healthy: isHealthy }, Date.now(), true);
+          logger.logToolCall(name, { healthy: isHealthy, integrity: integrity?.ok }, Date.now(), true);
           return {
             content: [
               {
                 type: "text",
                 text: JSON.stringify({
-                  status: isHealthy ? "healthy" : "unhealthy",
+                  status: isHealthy && (integrity ? integrity.ok : true) ? "healthy" : "unhealthy",
                   timestamp: new Date().toISOString(),
                   database: {
                     connected: isHealthy,
                     path: SESSION_DB_PATH,
                     memory_home: runtimeDiagnostics.database.memoryHome,
                   },
+                  integrity,
                   adapters: runtimeDiagnostics.harnesses,
                   config: runtimeDiagnostics.config,
                   stats: healthStats
@@ -2572,6 +2622,67 @@ class SessionMemoryServer {
               },
             ],
           };
+
+        case "record_artifact_read": {
+          const insertedId = this.db.recordArtifactRead({
+            artifactPath: args.artifact_path,
+            artifactType: args.artifact_type,
+            projectId: args.project_id,
+            sessionId: args.session_id,
+            harness: args.harness,
+            query: args.query,
+            score: args.score,
+            metadata: normalizeMetadata(args.metadata),
+          });
+          endTimer();
+          logger.logToolCall(name, { artifact_path: args.artifact_path, insertedId }, Date.now(), true);
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Artifact read recorded: ${insertedId}`,
+              },
+            ],
+          };
+        }
+
+        case "get_artifact_reads": {
+          const artifactReads = this.db.getArtifactReads({
+            projectId: args.project_id,
+            sessionId: args.session_id,
+            harness: args.harness,
+            artifactPath: args.artifact_path,
+            limit: args.limit,
+          });
+          endTimer();
+          logger.logToolCall(name, { count: artifactReads.length }, Date.now(), true);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(artifactReads, null, 2),
+              },
+            ],
+          };
+        }
+
+        case "get_autodream_metrics": {
+          const metrics = this.db.getAutodreamMetrics({
+            project: args.project,
+            sessionId: args.session_id,
+            limit: args.limit,
+          });
+          endTimer();
+          logger.logToolCall(name, { count: metrics.length }, Date.now(), true);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(metrics, null, 2),
+              },
+            ],
+          };
+        }
 
         case "server_stats":
           const dbStats = this.db.getStats();

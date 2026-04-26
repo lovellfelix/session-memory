@@ -812,7 +812,7 @@ export class DatabaseMigrator {
 
 export const migrator = new DatabaseMigrator()
 
-export const LATEST_MIGRATION_VERSION = 11
+export const LATEST_MIGRATION_VERSION = 12
 
 export const migrationV12: Migration = {
   version: 12,

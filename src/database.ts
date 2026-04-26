@@ -13,6 +13,18 @@ import { AnalyticsEngine } from "./analytics.js"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+// Helper to add columns if they don't exist
+const safeAddColumn = (db: any, table: string, column: string, type: string) => {
+  try {
+    const row = db.prepare(`SELECT COUNT(*) as count FROM pragma_table_info('${table}') WHERE name = '${column}'`).get() as { count?: number } | undefined
+    if (!row?.count) {
+      db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`)
+    }
+  } catch {
+    // Ignore errors — column may already exist
+  }
+}
+
 // Unified database interface for sql.js
 interface DatabaseAdapter {
   prepare(sql: string): StatementAdapter
@@ -1422,7 +1434,7 @@ export class SessionDatabase {
     return stmt.all(...params) as EnhancedTask[]
   }
 
-  updateTaskState(taskId: number, state: string, errorText?: string): void {
+  updateTaskState(taskId: number, state: string, errorText?: string, routingPatternKey?: string): void {
     const stmt = this.db.prepare(`
       UPDATE tasks 
       SET state = ?,
@@ -1434,6 +1446,37 @@ export class SessionDatabase {
 
     stmt.run(state, errorText || null, state, state, taskId)
     logger.debug("Task state updated", { taskId, state })
+
+    // Auto-update routing pattern success/failure based on task completion
+    if (routingPatternKey && state === "done") {
+      this.incrementRoutingPatternSuccess(routingPatternKey)
+    } else if (routingPatternKey && state === "failed") {
+      this.incrementRoutingPatternFailure(routingPatternKey)
+    }
+  }
+
+  // Increment routing pattern success count
+  incrementRoutingPatternSuccess(patternKey: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE routing_patterns 
+      SET success_count = success_count + 1, 
+          confidence = MIN(1.0, (success_count + 1.0) / NULLIF(success_count + failure_count + 1, 0)),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE pattern_key = ?
+    `)
+    stmt.run(patternKey)
+  }
+
+  // Increment routing pattern failure count
+  incrementRoutingPatternFailure(patternKey: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE routing_patterns 
+      SET failure_count = failure_count + 1, 
+          confidence = MAX(0.1, (success_count) / NULLIF(success_count + failure_count + 1, 0)),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE pattern_key = ?
+    `)
+    stmt.run(patternKey)
   }
 
   // Routing Pattern Methods
@@ -1490,6 +1533,89 @@ export class SessionDatabase {
     `)
 
     return stmt.all(minConfidence, limit) as RoutingPattern[]
+  }
+
+  // Per-type TTL configuration (days)
+  private readonly CONTEXT_TYPE_TTL: Record<string, number> = {
+    convention: Infinity, // Never expire project conventions
+    decision: 90, // Keep decisions for 90 days
+    workflow: 14, // Workflow state expires faster
+    blocker: 7, // Blockers should be resolved quickly
+    handoff: 30, // Handoffs kept for a month
+    interaction: 7, // Old interactions expire fast
+  }
+
+  // Default TTL for unknown context types
+  private readonly DEFAULT_CONTEXT_TTL_DAYS = 30
+
+  // Helper to get TTL for context type
+  private getContextTypeTTL(contextType: string): number {
+    return this.CONTEXT_TYPE_TTL[contextType] ?? this.DEFAULT_CONTEXT_TTL_DAYS
+  }
+
+  // Enhanced cleanup with per-type TTL
+  cleanupSmart(args: { preferenceDaysOld?: number; conventionDaysOld?: number } = {}): number {
+    const prefDays = args.preferenceDaysOld ?? 90
+    const convDays = args.conventionDaysOld ?? Infinity // Conventions never expire by default
+    let total = 0
+
+    // Clean preferences older than prefDays (but extend if recently accessed)
+    const oldPrefs = this.db.prepare(`
+      DELETE FROM user_preferences
+      WHERE updated_at < datetime('now', '-${prefDays} days')
+      AND (last_accessed IS NULL OR last_accessed < datetime('now', '-${prefDays} days'))
+    `)
+    total += (oldPrefs.run().changes || 0)
+
+    // Clean conventions older than convDays (but extend if recently accessed)
+    if (convDays !== Infinity) {
+      const oldConvs = this.db.prepare(`
+        DELETE FROM project_conventions
+        WHERE updated_at < datetime('now', '-${convDays} days')
+        AND (last_accessed IS NULL OR last_accessed < datetime('now', '-${convDays} days'))
+      `)
+      total += (oldConvs.run().changes || 0)
+    }
+
+    // Clean session contexts by type with per-type TTL
+    for (const [ctxType, ttlDays] of Object.entries(this.CONTEXT_TYPE_TTL)) {
+      if (ttlDays === Infinity) continue
+      const deleteStmt = this.db.prepare(`
+        DELETE FROM session_contexts
+        WHERE context_type = ?
+        AND updated_at < datetime('now', '-${ttlDays} days')
+        AND (last_accessed IS NULL OR last_accessed < datetime('now', '-${ttlDays} days'))
+      `)
+      total += (deleteStmt.run(ctxType).changes || 0)
+    }
+
+    logger.info("Smart cleanup completed", { totalDeleted: total })
+    return total
+  }
+
+  // Update last_accessed on retrieval
+  touchPreference(userId: string, preferenceKey: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE user_preferences SET last_accessed = CURRENT_TIMESTAMP
+      WHERE user_id = ? AND preference_key = ?
+    `)
+    stmt.run(userId, preferenceKey)
+  }
+
+  touchConvention(projectId: string, conventionKey: string): void {
+    const stmt = this.db.prepare(`
+      UPDATE project_conventions SET last_accessed = CURRENT_TIMESTAMP
+      WHERE project_id = ? AND convention_key = ?
+    `)
+    stmt.run(projectId, conventionKey)
+  }
+
+  touchContext(contextId: number): void {
+    const stmt = this.db.prepare(`
+      UPDATE session_contexts SET last_accessed = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `)
+    stmt.run(contextId)
   }
 
   // Cleanup Methods

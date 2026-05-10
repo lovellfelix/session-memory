@@ -2,8 +2,35 @@
 # restore-backup.sh - Restore database from backup
 set -euo pipefail
 
-DB_PATH="$HOME/.opencode/sessions/session.db"
-BACKUP_DIR="$HOME/.opencode/sessions/backups"
+# Canonical session-memory paths (mirrors backup-session-memory.sh resolution).
+# Honors SESSION_DB / BACKUP_DIR env overrides; falls back to legacy
+# ~/.opencode/sessions/ if the canonical path is missing.
+canonical_db="$HOME/.agents/memory/session.db"
+canonical_backups="$HOME/.agents/memory/backups"
+legacy_db="$HOME/.opencode/sessions/session.db"
+legacy_backups="$HOME/.opencode/sessions/backups"
+
+DB_PATH="${SESSION_DB:-}"
+if [[ -z "$DB_PATH" ]]; then
+    if [[ -f "$canonical_db" ]]; then
+        DB_PATH="$canonical_db"
+    elif [[ -f "$legacy_db" ]]; then
+        DB_PATH="$legacy_db"
+    else
+        DB_PATH="$canonical_db"
+    fi
+fi
+
+BACKUP_DIR="${BACKUP_DIR:-}"
+if [[ -z "$BACKUP_DIR" ]]; then
+    if [[ -d "$canonical_backups" ]]; then
+        BACKUP_DIR="$canonical_backups"
+    elif [[ -d "$legacy_backups" ]]; then
+        BACKUP_DIR="$legacy_backups"
+    else
+        BACKUP_DIR="$canonical_backups"
+    fi
+fi
 
 die() {
     echo "❌ Error: $1" >&2

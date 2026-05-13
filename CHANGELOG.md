@@ -7,34 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Runtime-agnostic SQLite adapter supporting both Node.js (`better-sqlite3`) and Bun (`bun:sqlite`) environments
-- Dynamic database implementation loading based on runtime detection
-- Async database initialization with `initialize()` method
-- Unified database interface that normalizes API differences between implementations
-- Automated verification scripts (`scripts/test-bun-compat.sh`, `scripts/show-bun-code.sh`)
-- Comprehensive testing guide (`BUN-TESTING-GUIDE.md`)
-
-### Changed
-- Database imports are now dynamic instead of static to support Bun runtime
-- Database initialization moved to async pattern for better error handling
-- Connection pooling temporarily disabled for Bun compatibility (single connection mode)
-- Type annotations changed to runtime-agnostic `any` types where needed
-
-### Technical
-- Added `UnifiedDatabaseAdapter` class to normalize statement API differences
-- Bun detection via `typeof (globalThis as any).Bun !== 'undefined'`
-- Better error messages with runtime context in logs
-- All database operations work identically in both Node.js and Bun runtimes
-
-### Verified - 2026-01-26 15:50:31
-- ✅ TypeScript compilation successful with Bun compatibility
-- ✅ Runtime detection code present in `dist/database.js`
-- ✅ Bun SQLite dynamic import present in compiled output
-- ✅ Node.js `better-sqlite3` fallback present in compiled output
-- ✅ Async initialization pattern present in `dist/index.js`
-- ✅ Global npm package symlinked (auto-updated on rebuild)
-
 ## [2.0.0] - 2025-01-18
 
 ### Added

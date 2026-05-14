@@ -717,7 +717,6 @@ export class DatabaseMigrator {
         `)
       },
     },
-    migrationV12,
   ]
 
   getCurrentVersion(db: any): number {
@@ -813,44 +812,3 @@ export class DatabaseMigrator {
 export const migrator = new DatabaseMigrator()
 
 export const LATEST_MIGRATION_VERSION = 12
-
-export const migrationV12: Migration = {
-  version: 12,
-  name: "add_last_accessed_for_smart_ttl",
-  up: (db: any) => {
-    logger.info("Migration v12: Adding last_accessed columns for smart TTL")
-
-    const columnExists = (tableName: string, columnName: string): boolean => {
-      try {
-        const row = db
-          .prepare(
-            `SELECT COUNT(*) as count FROM pragma_table_info('${tableName}') WHERE name = '${columnName}'`
-          )
-          .get() as { count?: number } | undefined
-        return (row?.count || 0) > 0
-      } catch {
-        return false
-      }
-    }
-
-    if (!columnExists("user_preferences", "last_accessed")) {
-      db.exec(`ALTER TABLE user_preferences ADD COLUMN last_accessed TIMESTAMP`)
-    }
-
-    if (!columnExists("project_conventions", "last_accessed")) {
-      db.exec(`ALTER TABLE project_conventions ADD COLUMN last_accessed TIMESTAMP`)
-    }
-
-    if (!columnExists("session_contexts", "last_accessed")) {
-      db.exec(`ALTER TABLE session_contexts ADD COLUMN last_accessed TIMESTAMP`)
-    }
-
-    logger.info("Migration v12: last_accessed columns added successfully")
-  },
-  down: (db: any) => {
-    logger.info("Migration v12: Rolling back last_accessed columns")
-    db.exec("ALTER TABLE user_preferences DROP COLUMN last_accessed")
-    db.exec("ALTER TABLE project_conventions DROP COLUMN last_accessed")
-    db.exec("ALTER TABLE session_contexts DROP COLUMN last_accessed")
-  },
-}

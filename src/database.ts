@@ -414,6 +414,7 @@ export class SessionDatabase {
       // Run migrations against the adapter (better-sqlite3 compatible interface)
       // so migrations can use prepare().get/run and exec() consistently.
       migrator.migrate(this.db)
+      this.repairUnavailableFtsTriggers()
       this.analytics = new AnalyticsEngine(this.db.getRaw())
       this.setupCleanupJob()
 
@@ -917,6 +918,55 @@ export class SessionDatabase {
     }
 
     logger.info("Database tables initialized")
+  }
+
+  private repairUnavailableFtsTriggers(): void {
+    const ftsMappings = [
+      {
+        ftsTable: "session_contexts_fts",
+        triggerNames: ["session_contexts_ai", "session_contexts_ad", "session_contexts_au"],
+      },
+      {
+        ftsTable: "api_endpoints_fts",
+        triggerNames: [
+          "api_endpoints_fts_insert",
+          "api_endpoints_fts_delete",
+          "api_endpoints_fts_update",
+        ],
+      },
+    ]
+
+    for (const mapping of ftsMappings) {
+      if (this.isFtsTableUsable(mapping.ftsTable)) {
+        continue
+      }
+
+      for (const triggerName of mapping.triggerNames) {
+        this.db.exec(`DROP TRIGGER IF EXISTS ${triggerName}`)
+      }
+
+      logger.warn("Dropped stale FTS triggers because FTS table is unavailable", {
+        ftsTable: mapping.ftsTable,
+        triggerNames: mapping.triggerNames,
+      })
+    }
+  }
+
+  private isFtsTableUsable(tableName: string): boolean {
+    const tableExists = this.db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?")
+      .get(tableName)
+
+    if (!tableExists) {
+      return false
+    }
+
+    try {
+      this.db.prepare(`SELECT rowid FROM ${tableName} LIMIT 1`).all()
+      return true
+    } catch {
+      return false
+    }
   }
 
   private setupCleanupJob(): void {

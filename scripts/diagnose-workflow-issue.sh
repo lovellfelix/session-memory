@@ -26,7 +26,16 @@ fi
 echo ""
 
 echo "3. Checking MCP Database..."
-db_path=~/.opencode/sessions/session.db
+canonical_db_path=~/.agents/memory/session.db
+legacy_db_path=~/.opencode/sessions/session.db
+if [[ -f "$canonical_db_path" ]]; then
+    db_path="$canonical_db_path"
+elif [[ -f "$legacy_db_path" ]]; then
+    db_path="$legacy_db_path"
+else
+    db_path="$canonical_db_path"
+fi
+
 if [[ -f "$db_path" ]]; then
     echo "✅ MCP database exists"
     ls -lh "$db_path"

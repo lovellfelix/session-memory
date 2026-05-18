@@ -10,7 +10,7 @@ import {
 import { SessionDatabase } from "./database.js";
 import { createWebServer } from "./web-server.js";
 import { logger } from "./logger.js";
-import { performanceTracker } from "./performance.js";
+import { nowMs, performanceTracker } from "./performance.js";
 import { apiParser } from "./api-parser.js";
 import { handleError } from "./errors.js";
 import { readFileSync } from "fs";
@@ -1537,7 +1537,9 @@ class SessionMemoryServer {
 
   private async handleToolCall(request: any) {
     const { name, arguments: args } = request.params;
+    const toolCallStart = nowMs();
     const endTimer = performanceTracker.start(`tool:${name}`);
+    const elapsedMs = () => nowMs() - toolCallStart;
 
     try {
       // Ensure database is initialized before handling any tool calls
@@ -1596,7 +1598,7 @@ class SessionMemoryServer {
             normalizeMetadata(args.metadata)
           );
           endTimer();
-          logger.logToolCall(name, { session_id: args.session_id, key }, Date.now(), true);
+          logger.logToolCall(name, { session_id: args.session_id, key }, elapsedMs(), true);
           if (args.idempotency_key) {
             this.db.storeIdempotencyResult(name, args.idempotency_key, `Context stored: ${key}`);
           }
@@ -1618,7 +1620,7 @@ class SessionMemoryServer {
             args.limit
           );
           endTimer();
-          logger.logToolCall(name, { session_id: args.session_id, count: contexts.length }, Date.now(), true);
+          logger.logToolCall(name, { session_id: args.session_id, count: contexts.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1644,7 +1646,7 @@ class SessionMemoryServer {
             normalizeMetadata(args.metadata)
           );
           endTimer();
-          logger.logToolCall(name, { session_id: args.session_id, key: args.key }, Date.now(), true);
+          logger.logToolCall(name, { session_id: args.session_id, key: args.key }, elapsedMs(), true);
           if (args.idempotency_key) {
             this.db.storeIdempotencyResult(name, args.idempotency_key, `Context updated: ${args.key}`);
           }
@@ -1680,7 +1682,7 @@ class SessionMemoryServer {
             args.confidence || 1.0
           );
           endTimer();
-          logger.logToolCall(name, { category: args.category, key: args.preference_key }, Date.now(), true);
+          logger.logToolCall(name, { category: args.category, key: args.preference_key }, elapsedMs(), true);
           if (args.idempotency_key) {
             this.db.storeIdempotencyResult(name, args.idempotency_key, `Preference tracked: ${args.preference_key} (category: ${args.category})`);
           }
@@ -1699,7 +1701,7 @@ class SessionMemoryServer {
             args.preference_key
           );
           endTimer();
-          logger.logToolCall(name, { user_id: args.user_id || "default", count: preferences.length }, Date.now(), true);
+          logger.logToolCall(name, { user_id: args.user_id || "default", count: preferences.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1725,7 +1727,7 @@ class SessionMemoryServer {
             args.convention_value
           );
           endTimer();
-          logger.logToolCall(name, { project_id: args.project_id, key: args.convention_key }, Date.now(), true);
+          logger.logToolCall(name, { project_id: args.project_id, key: args.convention_key }, elapsedMs(), true);
           if (args.idempotency_key) {
             this.db.storeIdempotencyResult(name, args.idempotency_key, `Convention learned: ${args.convention_key}`);
           }
@@ -1745,7 +1747,7 @@ class SessionMemoryServer {
             args.convention_type
           );
           endTimer();
-          logger.logToolCall(name, { project_id: args.project_id, count: conventions.length }, Date.now(), true);
+          logger.logToolCall(name, { project_id: args.project_id, count: conventions.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1776,7 +1778,7 @@ class SessionMemoryServer {
             normalizeMetadata(args.metadata)
           );
           endTimer();
-          logger.logToolCall(name, { session_id: args.session_id, role: args.role }, Date.now(), true);
+          logger.logToolCall(name, { session_id: args.session_id, role: args.role }, elapsedMs(), true);
           if (args.idempotency_key) {
             this.db.storeIdempotencyResult(name, args.idempotency_key, 'Interaction stored');
           }
@@ -1795,7 +1797,7 @@ class SessionMemoryServer {
             args.limit
           );
           endTimer();
-          logger.logToolCall(name, { session_id: args.session_id, count: history.length }, Date.now(), true);
+          logger.logToolCall(name, { session_id: args.session_id, count: history.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1808,7 +1810,7 @@ class SessionMemoryServer {
         case "cleanup_old_sessions":
           const deleted = this.db.cleanupOldSessions(args.days || 30);
           endTimer();
-          logger.logToolCall(name, { days: args.days || 30, deleted }, Date.now(), true);
+          logger.logToolCall(name, { days: args.days || 30, deleted }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1821,7 +1823,7 @@ class SessionMemoryServer {
         case "get_recent_activity":
           const activity = this.db.getRecentActivity(args.limit || 10);
           endTimer();
-          logger.logToolCall(name, { limit: args.limit || 10 }, Date.now(), true);
+          logger.logToolCall(name, { limit: args.limit || 10 }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1845,7 +1847,7 @@ class SessionMemoryServer {
             args.tags
           );
           endTimer();
-          logger.logToolCall(name, { title: args.title, task_id: taskId }, Date.now(), true);
+          logger.logToolCall(name, { title: args.title, task_id: taskId }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1863,7 +1865,7 @@ class SessionMemoryServer {
             agentId: args.agent_id
           });
           endTimer();
-          logger.logToolCall(name, { count: tasks.length }, Date.now(), true);
+          logger.logToolCall(name, { count: tasks.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1881,7 +1883,7 @@ class SessionMemoryServer {
             priority: args.priority
           });
           endTimer();
-          logger.logToolCall(name, { id: args.id }, Date.now(), true);
+          logger.logToolCall(name, { id: args.id }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1894,7 +1896,7 @@ class SessionMemoryServer {
         case "delete_task":
           const taskDeleted = this.db.deleteTask(args.id);
           endTimer();
-          logger.logToolCall(name, { id: args.id, deleted: taskDeleted }, Date.now(), true);
+          logger.logToolCall(name, { id: args.id, deleted: taskDeleted }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1911,7 +1913,7 @@ class SessionMemoryServer {
             contextType: args.context_type,
           });
           endTimer();
-          logger.logToolCall(name, { query: args.query, count: searchResults.length }, Date.now(), true);
+          logger.logToolCall(name, { query: args.query, count: searchResults.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1927,7 +1929,7 @@ class SessionMemoryServer {
             threshold: args.threshold,
           });
           endTimer();
-          logger.logToolCall(name, { query: args.query, count: semanticResults.length }, Date.now(), true);
+          logger.logToolCall(name, { query: args.query, count: semanticResults.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1944,7 +1946,7 @@ class SessionMemoryServer {
             patternTypes: args.pattern_types,
           });
           endTimer();
-          logger.logToolCall(name, { count: patterns.length }, Date.now(), true);
+          logger.logToolCall(name, { count: patterns.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1962,7 +1964,7 @@ class SessionMemoryServer {
             contextType: args.context_type,
           });
           endTimer();
-          logger.logToolCall(name, { periods: temporalResults.length }, Date.now(), true);
+          logger.logToolCall(name, { periods: temporalResults.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1979,7 +1981,7 @@ class SessionMemoryServer {
             projectId: args.project_id,
           });
           endTimer();
-          logger.logToolCall(name, { count: conflicts.length }, Date.now(), true);
+          logger.logToolCall(name, { count: conflicts.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -1994,7 +1996,7 @@ class SessionMemoryServer {
             projectId: args.project_id,
           });
           endTimer();
-          logger.logToolCall(name, { totalContexts: memoryMap.totalContexts }, Date.now(), true);
+          logger.logToolCall(name, { totalContexts: memoryMap.totalContexts }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2012,7 +2014,7 @@ class SessionMemoryServer {
             limit: args.limit,
           });
           endTimer();
-          logger.logToolCall(name, { format: args.format || 'json' }, Date.now(), true);
+          logger.logToolCall(name, { format: args.format || 'json' }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2028,7 +2030,7 @@ class SessionMemoryServer {
             overwrite: args.overwrite,
           });
           endTimer();
-          logger.logToolCall(name, importResult, Date.now(), true);
+          logger.logToolCall(name, importResult, elapsedMs(), true);
           return {
             content: [
               {
@@ -2041,7 +2043,7 @@ class SessionMemoryServer {
         case "memory_compact":
           const compactResult = this.db.getAnalytics().compactStorage();
           endTimer();
-          logger.logToolCall(name, compactResult, Date.now(), true);
+          logger.logToolCall(name, compactResult, elapsedMs(), true);
           return {
             content: [
               {
@@ -2055,7 +2057,7 @@ class SessionMemoryServer {
           if (args.action === 'list') {
             const tags = this.db.getAnalytics().getTags();
             endTimer();
-            logger.logToolCall(name, { action: 'list', count: tags.length }, Date.now(), true);
+            logger.logToolCall(name, { action: 'list', count: tags.length }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2067,7 +2069,7 @@ class SessionMemoryServer {
           } else if (args.action === 'add') {
             this.db.getAnalytics().addTag(args.memory_id, args.memory_type, args.tag);
             endTimer();
-            logger.logToolCall(name, { action: 'add', tag: args.tag }, Date.now(), true);
+            logger.logToolCall(name, { action: 'add', tag: args.tag }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2086,7 +2088,7 @@ class SessionMemoryServer {
             includeDone: args.include_done
           });
           endTimer();
-          logger.logToolCall(name, { groups: Object.keys(taskBoard).length }, Date.now(), true);
+          logger.logToolCall(name, { groups: Object.keys(taskBoard).length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2101,7 +2103,7 @@ class SessionMemoryServer {
             projectId: args.project_id
           });
           endTimer();
-          logger.logToolCall(name, insights, Date.now(), true);
+          logger.logToolCall(name, insights, elapsedMs(), true);
           return {
             content: [
               {
@@ -2116,7 +2118,7 @@ class SessionMemoryServer {
           if (args.action === 'get') {
             const profile = this.db.getProjectProfile(args.id);
             endTimer();
-            logger.logToolCall(name, { action: 'get', id: args.id, found: !!profile }, Date.now(), true);
+            logger.logToolCall(name, { action: 'get', id: args.id, found: !!profile }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2135,7 +2137,7 @@ class SessionMemoryServer {
               conventions_summary: args.conventions_summary,
             });
             endTimer();
-            logger.logToolCall(name, { action: 'create', id: args.id }, Date.now(), true);
+            logger.logToolCall(name, { action: 'create', id: args.id }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2149,7 +2151,7 @@ class SessionMemoryServer {
               limit: args.limit
             });
             endTimer();
-            logger.logToolCall(name, { action: 'list', count: profiles.length }, Date.now(), true);
+            logger.logToolCall(name, { action: 'list', count: profiles.length }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2168,7 +2170,7 @@ class SessionMemoryServer {
             args.limit || 20
           );
           endTimer();
-          logger.logToolCall(name, { count: routingPatterns.length }, Date.now(), true);
+          logger.logToolCall(name, { count: routingPatterns.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2188,7 +2190,7 @@ class SessionMemoryServer {
             normalizeMetadata(args.metadata)
           );
           endTimer();
-          logger.logToolCall(name, { pattern_key: args.pattern_key }, Date.now(), true);
+          logger.logToolCall(name, { pattern_key: args.pattern_key }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2204,7 +2206,7 @@ class SessionMemoryServer {
             limit: args.limit || 5
           });
           endTimer();
-          logger.logToolCall(name, { count: similarPatterns.length }, Date.now(), true);
+          logger.logToolCall(name, { count: similarPatterns.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2241,7 +2243,7 @@ class SessionMemoryServer {
           });
           const storedCount = this.db.storeContextBatch(args.session_id, batchContexts);
           endTimer();
-          logger.logToolCall(name, { count: storedCount }, Date.now(), true);
+          logger.logToolCall(name, { count: storedCount }, elapsedMs(), true);
           if (args.idempotency_key) {
             this.db.storeIdempotencyResult(name, args.idempotency_key, `Stored ${storedCount} contexts`);
           }
@@ -2270,7 +2272,7 @@ class SessionMemoryServer {
           }));
           const trackedCount = this.db.trackPreferenceBatch(args.user_id || 'default', batchPrefs);
           endTimer();
-          logger.logToolCall(name, { count: trackedCount }, Date.now(), true);
+          logger.logToolCall(name, { count: trackedCount }, elapsedMs(), true);
           if (args.idempotency_key) {
             this.db.storeIdempotencyResult(name, args.idempotency_key, `Tracked ${trackedCount} preferences`);
           }
@@ -2298,7 +2300,7 @@ class SessionMemoryServer {
           }));
           const convCount = this.db.storeConventionBatch(args.project_id, args.language, batchConvs);
           endTimer();
-          logger.logToolCall(name, { count: convCount }, Date.now(), true);
+          logger.logToolCall(name, { count: convCount }, elapsedMs(), true);
           if (args.idempotency_key) {
             this.db.storeIdempotencyResult(name, args.idempotency_key, `Stored ${convCount} conventions`);
           }
@@ -2357,7 +2359,7 @@ class SessionMemoryServer {
             endpoints: parsed.endpoints.length, 
             schemas: parsed.schemas.length,
             action: storeResult.inserted ? 'created' : storeResult.updated ? 'updated' : 'unchanged'
-          }, Date.now(), true);
+          }, elapsedMs(), true);
           
           return {
             content: [
@@ -2373,7 +2375,7 @@ class SessionMemoryServer {
           endTimer();
           
           if (!spec) {
-            logger.logToolCall(name, { spec_id: args.spec_id, found: false }, Date.now(), true);
+            logger.logToolCall(name, { spec_id: args.spec_id, found: false }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2384,7 +2386,7 @@ class SessionMemoryServer {
             };
           }
           
-          logger.logToolCall(name, { spec_id: args.spec_id, found: true }, Date.now(), true);
+          logger.logToolCall(name, { spec_id: args.spec_id, found: true }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2397,7 +2399,7 @@ class SessionMemoryServer {
         case "list_api_specs":
           const specs = this.db.listApiSpecs();
           endTimer();
-          logger.logToolCall(name, { count: specs.length }, Date.now(), true);
+          logger.logToolCall(name, { count: specs.length }, elapsedMs(), true);
           
           return {
             content: [
@@ -2411,7 +2413,7 @@ class SessionMemoryServer {
         case "delete_api_spec":
           const deletedSpec = this.db.deleteApiSpec(args.spec_id);
           endTimer();
-          logger.logToolCall(name, { spec_id: args.spec_id, deleted: deletedSpec }, Date.now(), true);
+          logger.logToolCall(name, { spec_id: args.spec_id, deleted: deletedSpec }, elapsedMs(), true);
           
           return {
             content: [
@@ -2433,7 +2435,7 @@ class SessionMemoryServer {
             args.limit || 20
           );
           endTimer();
-          logger.logToolCall(name, { count: endpoints.length }, Date.now(), true);
+          logger.logToolCall(name, { count: endpoints.length }, elapsedMs(), true);
           
           return {
             content: [
@@ -2453,7 +2455,7 @@ class SessionMemoryServer {
           endTimer();
           
           if (!endpointDetail) {
-            logger.logToolCall(name, { spec_id: args.spec_id, path: args.path, method: args.method, found: false }, Date.now(), true);
+            logger.logToolCall(name, { spec_id: args.spec_id, path: args.path, method: args.method, found: false }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2464,7 +2466,7 @@ class SessionMemoryServer {
             };
           }
           
-          logger.logToolCall(name, { spec_id: args.spec_id, path: args.path, method: args.method, found: true }, Date.now(), true);
+          logger.logToolCall(name, { spec_id: args.spec_id, path: args.path, method: args.method, found: true }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2481,7 +2483,7 @@ class SessionMemoryServer {
             args.limit || 10
           );
           endTimer();
-          logger.logToolCall(name, { query: args.query, count: apiSearchResults.length }, Date.now(), true);
+          logger.logToolCall(name, { query: args.query, count: apiSearchResults.length }, elapsedMs(), true);
           
           return {
             content: [
@@ -2497,7 +2499,7 @@ class SessionMemoryServer {
           endTimer();
           
           if (!schema) {
-            logger.logToolCall(name, { spec_id: args.spec_id, schema_name: args.schema_name, found: false }, Date.now(), true);
+            logger.logToolCall(name, { spec_id: args.spec_id, schema_name: args.schema_name, found: false }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2508,7 +2510,7 @@ class SessionMemoryServer {
             };
           }
           
-          logger.logToolCall(name, { spec_id: args.spec_id, schema_name: args.schema_name, found: true }, Date.now(), true);
+          logger.logToolCall(name, { spec_id: args.spec_id, schema_name: args.schema_name, found: true }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2579,7 +2581,7 @@ class SessionMemoryServer {
             framework,
             services: analyzedServices.length,
             endpoints: analyzedEndpoints.length
-          }, Date.now(), true);
+          }, elapsedMs(), true);
           
           return {
             content: [
@@ -2601,7 +2603,7 @@ class SessionMemoryServer {
           const integrity = args.include_integrity ? this.db.getIntegrityStatus() : null;
           const runtimeDiagnostics = getRuntimeDiagnostics(PROMPT_MODULE_FILENAMES, CURATED_CONTEXT_FILENAMES);
           endTimer();
-          logger.logToolCall(name, { healthy: isHealthy, integrity: integrity?.ok }, Date.now(), true);
+          logger.logToolCall(name, { healthy: isHealthy, integrity: integrity?.ok }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2635,7 +2637,7 @@ class SessionMemoryServer {
             metadata: normalizeMetadata(args.metadata),
           });
           endTimer();
-          logger.logToolCall(name, { artifact_path: args.artifact_path, insertedId }, Date.now(), true);
+          logger.logToolCall(name, { artifact_path: args.artifact_path, insertedId }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2655,7 +2657,7 @@ class SessionMemoryServer {
             limit: args.limit,
           });
           endTimer();
-          logger.logToolCall(name, { count: artifactReads.length }, Date.now(), true);
+          logger.logToolCall(name, { count: artifactReads.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2673,7 +2675,7 @@ class SessionMemoryServer {
             limit: args.limit,
           });
           endTimer();
-          logger.logToolCall(name, { count: metrics.length }, Date.now(), true);
+          logger.logToolCall(name, { count: metrics.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2697,7 +2699,7 @@ class SessionMemoryServer {
             perfMetrics = perfObj;
           }
           endTimer();
-          logger.logToolCall(name, { collected: true }, Date.now(), true);
+          logger.logToolCall(name, { collected: true }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2745,7 +2747,7 @@ class SessionMemoryServer {
           }
           
           endTimer();
-          logger.logToolCall(name, { key: args.key, type: memoryType, importance, entities: entities.length }, Date.now(), true);
+          logger.logToolCall(name, { key: args.key, type: memoryType, importance, entities: entities.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2790,7 +2792,7 @@ class SessionMemoryServer {
           });
           
           endTimer();
-          logger.logToolCall(name, { topic: args.topic, count: filteredMemories.length }, Date.now(), true);
+          logger.logToolCall(name, { topic: args.topic, count: filteredMemories.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2803,7 +2805,7 @@ class SessionMemoryServer {
         case "query_memory": {
           const matches = this.db.queryMemory(args.query, args.limit || 20);
           endTimer();
-          logger.logToolCall(name, { query: args.query, count: matches.length }, Date.now(), true);
+          logger.logToolCall(name, { query: args.query, count: matches.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2818,7 +2820,7 @@ class SessionMemoryServer {
           const metadata = args.metadata ? JSON.stringify(args.metadata) : undefined;
           const updated = this.db.updateMemory(args.memory_id, args.value, metadata);
           endTimer();
-          logger.logToolCall(name, { memory_id: args.memory_id, updated }, Date.now(), true);
+          logger.logToolCall(name, { memory_id: args.memory_id, updated }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2832,7 +2834,7 @@ class SessionMemoryServer {
         case "link_memory_to_project": {
           const link = this.db.linkMemoryToProject(args.memory_id, args.project);
           endTimer();
-          logger.logToolCall(name, { memory_id: args.memory_id, project_id: link.projectId, linked: link.linked }, Date.now(), true);
+          logger.logToolCall(name, { memory_id: args.memory_id, project_id: link.projectId, linked: link.linked }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2846,7 +2848,7 @@ class SessionMemoryServer {
         case "daily_briefing": {
           const briefing = this.db.getDailyBriefing();
           endTimer();
-          logger.logToolCall(name, { generated: true }, Date.now(), true);
+          logger.logToolCall(name, { generated: true }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2860,7 +2862,7 @@ class SessionMemoryServer {
         case "weekly_review": {
           const review = this.db.getWeeklyReview();
           endTimer();
-          logger.logToolCall(name, { generated: true }, Date.now(), true);
+          logger.logToolCall(name, { generated: true }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2874,7 +2876,7 @@ class SessionMemoryServer {
         case "stale_work_scan": {
           const stale = this.db.getStaleWorkScan(args.stale_hours || 72);
           endTimer();
-          logger.logToolCall(name, { stale_hours: args.stale_hours || 72 }, Date.now(), true);
+          logger.logToolCall(name, { stale_hours: args.stale_hours || 72 }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2908,7 +2910,7 @@ class SessionMemoryServer {
           };
 
           endTimer();
-          logger.logToolCall(name, { mode: args.mode || 'default', modules: promptModules.length, memories: relevantMemory.length }, Date.now(), true);
+          logger.logToolCall(name, { mode: args.mode || 'default', modules: promptModules.length, memories: relevantMemory.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2927,7 +2929,7 @@ class SessionMemoryServer {
           });
           
           endTimer();
-          logger.logToolCall(name, { query: args.query, count: searchMemories.length }, Date.now(), true);
+          logger.logToolCall(name, { query: args.query, count: searchMemories.length }, elapsedMs(), true);
           return {
             content: [
               {
@@ -2969,7 +2971,7 @@ class SessionMemoryServer {
             }
             
             endTimer();
-            logger.logToolCall(name, { memory_id: args.memory_id, evolved: true }, Date.now(), true);
+            logger.logToolCall(name, { memory_id: args.memory_id, evolved: true }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -2981,7 +2983,7 @@ class SessionMemoryServer {
           }
           
           endTimer();
-          logger.logToolCall(name, { memory_id: args.memory_id, evolved: false }, Date.now(), true);
+          logger.logToolCall(name, { memory_id: args.memory_id, evolved: false }, elapsedMs(), true);
           return {
             content: [
               {
@@ -3020,7 +3022,7 @@ class SessionMemoryServer {
               .slice(0, args.limit || 50);
             
             endTimer();
-            logger.logToolCall(name, { count: fallbackResults.length, source: 'fallback' }, Date.now(), true);
+            logger.logToolCall(name, { count: fallbackResults.length, source: 'fallback' }, elapsedMs(), true);
             return {
               content: [
                 {
@@ -3038,7 +3040,7 @@ class SessionMemoryServer {
           }));
           
           endTimer();
-          logger.logToolCall(name, { count: entitiesResult.length, source: 'database' }, Date.now(), true);
+          logger.logToolCall(name, { count: entitiesResult.length, source: 'database' }, elapsedMs(), true);
           return {
             content: [
               {
@@ -3082,7 +3084,7 @@ class SessionMemoryServer {
           };
           
           endTimer();
-          logger.logToolCall(name, { session_id: args.session_id, memories: sessionMemories.length }, Date.now(), true);
+          logger.logToolCall(name, { session_id: args.session_id, memories: sessionMemories.length }, elapsedMs(), true);
           return {
             content: [
               {

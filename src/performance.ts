@@ -1,3 +1,9 @@
+import { performance } from "node:perf_hooks";
+
+export function nowMs(): number {
+  return performance.now();
+}
+
 export interface PerformanceStats {
   avg: number;
   min: number;
@@ -23,9 +29,9 @@ export class PerformanceTracker {
   }
 
   start(operation: string): () => void {
-    const start = Date.now();
+    const start = nowMs();
     return () => {
-      const duration = Date.now() - start;
+      const duration = nowMs() - start;
       if (!this.timings.has(operation)) {
         this.timings.set(operation, []);
       }

@@ -112,11 +112,12 @@ function extractText(result: any): string {
     : '';
 }
 
-describe('OpenCode MCP integration', () => {
+describe('Harness MCP integration', () => {
   const testRoot = mkdtempSync(path.join(tmpdir(), 'session-memory-open-code-'));
   const sessionDbPath = path.join(testRoot, 'memory', 'session.db');
   const opencodeRoot = path.join(testRoot, 'opencode');
   const piRoot = path.join(testRoot, 'pi-agent');
+  const claudeRoot = path.join(testRoot, 'claude');
   let client: McpTestClient;
 
   beforeAll(() => {
@@ -125,11 +126,15 @@ describe('OpenCode MCP integration', () => {
     mkdirSync(path.join(opencodeRoot, 'memory'), { recursive: true });
     mkdirSync(path.join(piRoot, 'prompts'), { recursive: true });
     mkdirSync(path.join(piRoot, 'memory'), { recursive: true });
+    mkdirSync(path.join(claudeRoot, 'prompts'), { recursive: true });
+    mkdirSync(path.join(claudeRoot, 'memory'), { recursive: true });
 
     writeFileSync(path.join(opencodeRoot, 'assistant_prompts', 'modes.md'), '# open modes');
     writeFileSync(path.join(opencodeRoot, 'memory', 'assistant_rules.md'), 'open rules');
     writeFileSync(path.join(piRoot, 'prompts', 'plan.md'), '# pi plan');
     writeFileSync(path.join(piRoot, 'memory', 'user_profile.md'), 'pi profile');
+    writeFileSync(path.join(claudeRoot, 'prompts', 'workflow.md'), '# claude workflow');
+    writeFileSync(path.join(claudeRoot, 'memory', 'assistant_rules.md'), 'claude rules');
 
   });
 
@@ -138,6 +143,7 @@ describe('OpenCode MCP integration', () => {
       SESSION_MEMORY_DB: sessionDbPath,
       OPENCODE_CONFIG_ROOT: opencodeRoot,
       PI_AGENT_ROOT: piRoot,
+      CLAUDE_CONFIG_ROOT: claudeRoot,
       LOG_LEVEL: 'error',
     });
 
@@ -199,7 +205,7 @@ describe('OpenCode MCP integration', () => {
 
     expect(parsed.server.name).toBe('@lovellfelix/mcp-session-memory');
     expect(parsed.db.path).toBe(sessionDbPath);
-    expect(parsed.adapters.map((adapter: any) => adapter.kind)).toEqual(['opencode', 'pi']);
+    expect(parsed.adapters.map((adapter: any) => adapter.kind)).toEqual(['opencode', 'pi', 'claude']);
     expect(parsed.runtime.database.path).toBe(sessionDbPath);
     expect(parsed.runtime.harnesses[0]).toHaveProperty('availablePromptFiles');
   });
@@ -215,6 +221,7 @@ describe('OpenCode MCP integration', () => {
       expect.arrayContaining([
         expect.objectContaining({ kind: 'opencode', promptDirExists: true }),
         expect.objectContaining({ kind: 'pi', promptDirExists: true }),
+        expect.objectContaining({ kind: 'claude', promptDirExists: true }),
       ]),
     );
     expect(parsed.stats).toMatchObject({
@@ -226,7 +233,7 @@ describe('OpenCode MCP integration', () => {
     });
   });
 
-  it('assembles active context from both OpenCode and Pi prompt sources', async () => {
+  it('assembles active context from OpenCode, Pi, and Claude prompt sources', async () => {
     const response = await client.callTool('assemble_active_context', {
       query: 'resume work on the portability plan',
       session_id: 'integration-session-002',
@@ -238,12 +245,14 @@ describe('OpenCode MCP integration', () => {
       expect.arrayContaining([
         expect.objectContaining({ source: 'opencode', name: 'modes.md', content: '# open modes' }),
         expect.objectContaining({ source: 'pi', name: 'plan.md', content: '# pi plan' }),
+        expect.objectContaining({ source: 'claude', name: 'workflow.md', content: '# claude workflow' }),
       ]),
     );
     expect(parsed.curated_markdown).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ source: 'opencode', name: 'assistant_rules.md', content: 'open rules' }),
         expect.objectContaining({ source: 'pi', name: 'user_profile.md', content: 'pi profile' }),
+        expect.objectContaining({ source: 'claude', name: 'assistant_rules.md', content: 'claude rules' }),
       ]),
     );
   });

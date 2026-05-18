@@ -67,12 +67,13 @@ describe('runtime-paths', () => {
     expect(resolveEncryptionKeyPath(env)).toBe('/tmp/home/.agents/memory/.encryption-key');
   });
 
-  it('resolves context sources for generic, OpenCode, and Pi harnesses', () => {
+  it('resolves context sources for generic, OpenCode, Pi, and Claude harnesses', () => {
     const sources = resolveContextSources({
       ...env,
       SESSION_MEMORY_CONTEXT_ROOT: '~/context-root',
       OPENCODE_CONFIG_ROOT: '~/oc',
       PI_AGENT_ROOT: '~/pi-agent',
+      CLAUDE_CONFIG_ROOT: '~/claude-config',
     });
 
     expect(sources).toEqual([
@@ -96,6 +97,13 @@ describe('runtime-paths', () => {
         root: '/tmp/home/pi-agent',
         promptDir: '/tmp/home/pi-agent/prompts',
         memoryDir: '/tmp/home/pi-agent/memory',
+      },
+      {
+        id: 'claude',
+        kind: 'claude',
+        root: '/tmp/home/claude-config',
+        promptDir: '/tmp/home/claude-config/prompts',
+        memoryDir: '/tmp/home/claude-config/memory',
       },
     ]);
   });

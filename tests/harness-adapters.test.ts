@@ -23,6 +23,7 @@ afterEach(() => {
   delete process.env.PI_AGENT_ROOT;
   delete process.env.SESSION_MEMORY_DB;
   delete process.env.SESSION_MEMORY_CONFIG;
+  delete process.env.CLAUDE_CONFIG_ROOT;
 
   while (createdDirs.length > 0) {
     const dir = createdDirs.pop();
@@ -33,38 +34,43 @@ afterEach(() => {
 });
 
 describe('harness-adapters', () => {
-  it('discovers generic, OpenCode, and Pi adapters', () => {
+  it('discovers generic, OpenCode, Pi, and Claude adapters', () => {
     process.env.SESSION_MEMORY_CONTEXT_ROOT = makeTempDir('session-memory-generic-');
     process.env.OPENCODE_CONFIG_ROOT = makeTempDir('session-memory-opencode-');
     process.env.PI_AGENT_ROOT = makeTempDir('session-memory-pi-');
+    process.env.CLAUDE_CONFIG_ROOT = makeTempDir('session-memory-claude-');
 
     const adapters = getHarnessAdapters();
-    expect(adapters.map(adapter => adapter.kind)).toEqual(['generic', 'opencode', 'pi']);
+    expect(adapters.map(adapter => adapter.kind)).toEqual(['generic', 'opencode', 'pi', 'claude']);
   });
 
   it('collects prompt modules and curated markdown from all harnesses', () => {
     const genericRoot = makeTempDir('session-memory-generic-');
     const opencodeRoot = makeTempDir('session-memory-opencode-');
     const piRoot = makeTempDir('session-memory-pi-');
+    const claudeRoot = makeTempDir('session-memory-claude-');
 
     process.env.SESSION_MEMORY_CONTEXT_ROOT = genericRoot;
     process.env.OPENCODE_CONFIG_ROOT = opencodeRoot;
     process.env.PI_AGENT_ROOT = piRoot;
+    process.env.CLAUDE_CONFIG_ROOT = claudeRoot;
 
     mkdirSync(path.join(genericRoot, 'prompts'), { recursive: true });
     mkdirSync(path.join(genericRoot, 'memory'), { recursive: true });
     mkdirSync(path.join(opencodeRoot, 'assistant_prompts'), { recursive: true });
     mkdirSync(path.join(opencodeRoot, 'memory'), { recursive: true });
     mkdirSync(path.join(piRoot, 'prompts'), { recursive: true });
+    mkdirSync(path.join(claudeRoot, 'prompts'), { recursive: true });
 
     writeFileSync(path.join(genericRoot, 'prompts', 'modes.md'), '# generic modes');
     writeFileSync(path.join(genericRoot, 'memory', 'user_profile.md'), 'generic profile');
     writeFileSync(path.join(opencodeRoot, 'assistant_prompts', 'system_prompt.md'), '# opencode system');
     writeFileSync(path.join(opencodeRoot, 'memory', 'assistant_rules.md'), 'opencode rules');
     writeFileSync(path.join(piRoot, 'prompts', 'plan.md'), '# pi plan');
+    writeFileSync(path.join(claudeRoot, 'prompts', 'workflow.md'), '# claude workflow');
 
     const artifacts = collectContextArtifacts(
-      ['modes.md', 'system_prompt.md', 'plan.md'],
+      ['modes.md', 'system_prompt.md', 'plan.md', 'workflow.md'],
       ['user_profile.md', 'assistant_rules.md'],
     );
 
@@ -72,6 +78,7 @@ describe('harness-adapters', () => {
       { source: 'generic', name: 'modes.md', content: '# generic modes' },
       { source: 'opencode', name: 'system_prompt.md', content: '# opencode system' },
       { source: 'pi', name: 'plan.md', content: '# pi plan' },
+      { source: 'claude', name: 'workflow.md', content: '# claude workflow' },
     ]);
     expect(artifacts.curatedMarkdown).toEqual([
       { source: 'generic', name: 'user_profile.md', content: 'generic profile' },

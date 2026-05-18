@@ -5,6 +5,25 @@ export enum LogLevel {
   ERROR = 3
 }
 
+function parseLogLevel(value?: string): LogLevel | undefined {
+  switch (value?.toLowerCase()) {
+    case "debug":
+      return LogLevel.DEBUG
+    case "info":
+      return LogLevel.INFO
+    case "warn":
+      return LogLevel.WARN
+    case "error":
+      return LogLevel.ERROR
+    default:
+      return undefined
+  }
+}
+
+function resolveDefaultLogLevel(): LogLevel {
+  return parseLogLevel(process.env.SESSION_MEMORY_LOG_LEVEL) ?? parseLogLevel(process.env.LOG_LEVEL) ?? LogLevel.INFO
+}
+
 export class Logger {
   private static instance: Logger;
   private level: LogLevel;
@@ -15,9 +34,9 @@ export class Logger {
 
   static getInstance(level?: LogLevel): Logger {
     if (!Logger.instance) {
-      Logger.instance = new Logger(level);
+      Logger.instance = new Logger(level ?? resolveDefaultLogLevel())
     }
-    return Logger.instance;
+    return Logger.instance
   }
 
   setLevel(level: LogLevel): void {

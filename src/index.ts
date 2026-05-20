@@ -1672,14 +1672,14 @@ class SessionMemoryServer {
             category: args.category,
             preference_key: args.preference_key,
             preference_value: args.preference_value,
-            confidence: args.confidence || 1.0
+            confidence: args.confidence ?? 1.0
           });
           this.db.trackPreference(
             args.user_id || "default",
             args.category,
             args.preference_key,
             args.preference_value,
-            args.confidence || 1.0
+            args.confidence ?? 1.0
           );
           endTimer();
           logger.logToolCall(name, { category: args.category, key: args.preference_key }, elapsedMs(), true);
@@ -2166,8 +2166,8 @@ class SessionMemoryServer {
         // ==================== Routing Pattern Tools ====================
         case "get_routing_patterns":
           const routingPatterns = this.db.getRoutingPatterns(
-            args.min_confidence || 0.7,
-            args.limit || 20
+            args.min_confidence ?? 0.7,
+            args.limit ?? 20
           );
           endTimer();
           logger.logToolCall(name, { count: routingPatterns.length }, elapsedMs(), true);
@@ -2185,8 +2185,8 @@ class SessionMemoryServer {
             args.pattern_key,
             args.agent_name,
             args.confidence,
-            args.file_count || 0,
-            args.loc_estimate || 0,
+            args.file_count ?? 0,
+            args.loc_estimate ?? 0,
             normalizeMetadata(args.metadata)
           );
           endTimer();
@@ -2202,8 +2202,8 @@ class SessionMemoryServer {
 
         case "find_similar_routing_patterns":
           const similarPatterns = this.db.findSimilarRoutingPatterns(args.description, {
-            minConfidence: args.min_confidence || 0.7,
-            limit: args.limit || 5
+            minConfidence: args.min_confidence ?? 0.7,
+            limit: args.limit ?? 5
           });
           endTimer();
           logger.logToolCall(name, { count: similarPatterns.length }, elapsedMs(), true);

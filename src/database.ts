@@ -2162,8 +2162,8 @@ export class SessionDatabase {
       minConfidence?: number
     } = {}
   ): RoutingPattern[] {
-    const limit = options.limit || 5
-    const minConfidence = options.minConfidence || 0.7
+    const limit = options.limit ?? 5
+    const minConfidence = options.minConfidence ?? 0.7
 
     // Simple keyword matching for similarity
     // In a real implementation, you'd use FTS or vector similarity

@@ -3141,7 +3141,7 @@ export class SessionDatabase {
 
     return {
       generated_at: new Date().toISOString(),
-      unfinished_prs_hint: "Use work-tracker sync for live GitHub PR state",
+      unfinished_prs_hint: "Use GitHub sync for live PR state",
       unfinished_tasks: unfinishedTasks,
       upcoming_commitments: upcomingReminders,
       open_loops: openLoops,

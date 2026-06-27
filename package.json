@@ -5,7 +5,8 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "mcp-session-memory": "dist/index.js"
+    "mcp-session-memory": "dist/index.js",
+    "smem": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc && npm run build:css",

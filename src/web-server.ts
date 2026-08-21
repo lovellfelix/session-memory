@@ -139,11 +139,11 @@ export async function createWebServer(options: WebServerOptions) {
       return {
         success: true,
         data: {
-          session_contexts: stats.sessionContexts.count,
-          user_preferences: stats.userPreferences.count,
-          project_conventions: stats.projectConventions.count,
-          interactions: stats.interactions.count,
-          tasks: stats.tasks?.total?.count || 0,
+          session_contexts: stats.contexts?.count || 0,
+          user_preferences: stats.preferences?.count || 0,
+          project_conventions: stats.conventions?.count || 0,
+          interactions: stats.interactions?.count || 0,
+          tasks: stats.tasks?.count || 0,
         },
       }
     } catch (error) {
@@ -205,12 +205,10 @@ export async function createWebServer(options: WebServerOptions) {
       const { user_id, category, preference_key, preference_value, confidence } = request.body || {}
       if (!user_id || !category || !preference_key || preference_value === undefined) {
         endTimer()
-        return reply
-          .status(400)
-          .send({
-            success: false,
-            error: "user_id, category, preference_key, preference_value are required",
-          })
+        return reply.status(400).send({
+          success: false,
+          error: "user_id, category, preference_key, preference_value are required",
+        })
       }
       database.trackPreference(
         user_id,
@@ -251,13 +249,11 @@ export async function createWebServer(options: WebServerOptions) {
         convention_value === undefined
       ) {
         endTimer()
-        return reply
-          .status(400)
-          .send({
-            success: false,
-            error:
-              "project_id, language, convention_type, convention_key, convention_value are required",
-          })
+        return reply.status(400).send({
+          success: false,
+          error:
+            "project_id, language, convention_type, convention_key, convention_value are required",
+        })
       }
       database.storeConvention(
         project_id,
@@ -814,11 +810,11 @@ export async function createWebServer(options: WebServerOptions) {
         database: {
           schema_version: schemaVersion,
           tables: {
-            session_contexts: stats.sessionContexts.count,
-            user_preferences: stats.userPreferences.count,
-            project_conventions: stats.projectConventions.count,
-            interactions: stats.interactions.count,
-            tasks: stats.tasks?.total?.count || 0,
+            session_contexts: stats.contexts?.count || 0,
+            user_preferences: stats.preferences?.count || 0,
+            project_conventions: stats.conventions?.count || 0,
+            interactions: stats.interactions?.count || 0,
+            tasks: stats.tasks?.count || 0,
           },
         },
         memory: {
